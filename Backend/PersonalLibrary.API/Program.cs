@@ -1,8 +1,19 @@
+using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using PersonalLibrary.API.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Add DbContext with SQL Server
+builder.Services.AddDbContext<LibraryDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Add FluentValidation validators from the Validators namespace
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 // Add CORS
 builder.Services.AddCors(options =>
