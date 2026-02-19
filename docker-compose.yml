@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: personallibrary-db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${SA_PASSWORD}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P ${SA_PASSWORD} -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - personallibrary-network
+
+  api:
+    build:
+      context: ./Backend/PersonalLibrary.API
+      dockerfile: Dockerfile
+    container_name: personallibrary-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - DB_HOST=${DB_HOST}
+      - DB_PASSWORD=${SA_PASSWORD}
+      - ConnectionStrings__DefaultConnection=Server=${DB_HOST};Database=PersonalLibrary;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;Encrypt=False;
+    ports:
+      - "5274:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    networks:
+      - personallibrary-network
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    container_name: personallibrary-frontend
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
+    ports:
+      - "5173:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - personallibrary-network
+
+volumes:
+  sqlserver_data:
+    driver: local
+
+networks:
+  personallibrary-network:
+    driver: bridge
