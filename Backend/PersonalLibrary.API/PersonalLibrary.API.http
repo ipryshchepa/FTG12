@@ -1,6 +1,326 @@
 @PersonalLibrary.API_HostAddress = http://localhost:5274
+@bookId = 
 
-GET {{PersonalLibrary.API_HostAddress}}/weatherforecast/
+###############################################################################
+# HEALTH CHECK
+###############################################################################
+
+### Health Check
+GET {{PersonalLibrary.API_HostAddress}}/api/health
 Accept: application/json
 
-###
+###############################################################################
+# BOOKS - CRUD Operations
+###############################################################################
+
+### Get All Books
+GET {{PersonalLibrary.API_HostAddress}}/api/books
+Accept: application/json
+
+### Get Book by ID
+GET {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}
+Accept: application/json
+
+### Create Book - Valid
+POST {{PersonalLibrary.API_HostAddress}}/api/books
+Content-Type: application/json
+
+{
+  "title": "The Great Adventure",
+  "author": "Author McAuthorface",
+  "description": "An exciting tale of adventure and discovery",
+  "notes": "Highly recommended by friends",
+  "isbn": "978-0-123456-78-9",
+  "publishedYear": 2024,
+  "pageCount": 350,
+  "ownershipStatus": "Owned"
+}
+
+### Create Book - Minimal (Invalid - should fail validation)
+POST {{PersonalLibrary.API_HostAddress}}/api/books
+Content-Type: application/json
+
+{
+  "title": "",
+  "author": "",
+  "ownershipStatus": "Owned"
+}
+
+### Create Book - With ID (Invalid - should fail)
+POST {{PersonalLibrary.API_HostAddress}}/api/books
+Content-Type: application/json
+
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "title": "Test Book",
+  "author": "Author McAuthorface",
+  "ownershipStatus": "Owned"
+}
+
+### Update Book - Valid
+PUT {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}
+Content-Type: application/json
+
+{
+  "id": "{{bookId}}",
+  "title": "The Great Adventure - Updated Edition",
+  "author": "Author McAuthorface",
+  "description": "An exciting tale of adventure and discovery - now with more excitement!",
+  "notes": "Updated with new content",
+  "isbn": "978-0-123456-78-9",
+  "publishedYear": 2025,
+  "pageCount": 400,
+  "ownershipStatus": "Owned"
+}
+
+### Update Book - ID Mismatch (Invalid - should fail)
+PUT {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}
+Content-Type: application/json
+
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "title": "Test Book",
+  "author": "Author McAuthorface",
+  "ownershipStatus": "Owned"
+}
+
+### Update Book - Null ID (Invalid - should fail)
+PUT {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}
+Content-Type: application/json
+
+{
+  "title": "Test Book",
+  "author": "Author McAuthorface",
+  "ownershipStatus": "Owned"
+}
+
+### Delete Book
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}
+
+### Delete Book - Not Found (Invalid)
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/00000000-0000-0000-0000-000000000000
+
+###############################################################################
+# RATINGS - Create, Update, Delete
+###############################################################################
+
+### Create or Update Rating - Valid
+POST {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/rating
+Content-Type: application/json
+
+{
+  "score": 8,
+  "notes": "Great book! Really enjoyed the plot and character development."
+}
+
+### Create or Update Rating - Maximum Score
+POST {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/rating
+Content-Type: application/json
+
+{
+  "score": 10,
+  "notes": "Absolutely perfect! A masterpiece of modern literature."
+}
+
+### Create or Update Rating - Invalid Score (should fail)
+POST {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/rating
+Content-Type: application/json
+
+{
+  "score": 11,
+  "notes": "This should fail validation"
+}
+
+### Create or Update Rating - Invalid Score Too Low (should fail)
+POST {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/rating
+Content-Type: application/json
+
+{
+  "score": 0,
+  "notes": "This should fail validation"
+}
+
+### Create or Update Rating - Book Not Found (Invalid)
+POST {{PersonalLibrary.API_HostAddress}}/api/books/00000000-0000-0000-0000-000000000000/rating
+Content-Type: application/json
+
+{
+  "score": 8,
+  "notes": "This should fail because book doesn't exist"
+}
+
+### Delete Rating
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/rating
+
+### Delete Rating - Book Not Found (Invalid)
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/00000000-0000-0000-0000-000000000000/rating
+
+###############################################################################
+# LOANS - Create, Return, History
+###############################################################################
+
+### Get All Active Loans
+GET {{PersonalLibrary.API_HostAddress}}/api/loans
+Accept: application/json
+
+### Get Loan History for Book
+GET {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/loans
+Accept: application/json
+
+### Get Loan History - Book Not Found (Invalid)
+GET {{PersonalLibrary.API_HostAddress}}/api/books/00000000-0000-0000-0000-000000000000/loans
+Accept: application/json
+
+### Create Loan - Valid
+POST {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/loan
+Content-Type: application/json
+
+{
+  "borrowedTo": "Alice Smith"
+}
+
+### Create Loan - Empty Borrower (Invalid - should fail)
+POST {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/loan
+Content-Type: application/json
+
+{
+  "borrowedTo": ""
+}
+
+### Create Loan - Already Loaned (Invalid - should fail with 409)
+POST {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/loan
+Content-Type: application/json
+
+{
+  "borrowedTo": "Bob Johnson"
+}
+
+### Create Loan - Book Not Found (Invalid)
+POST {{PersonalLibrary.API_HostAddress}}/api/books/00000000-0000-0000-0000-000000000000/loan
+Content-Type: application/json
+
+{
+  "borrowedTo": "Alice Smith"
+}
+
+### Return Book
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/loan
+
+### Return Book - No Active Loan (Invalid - should fail)
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/loan
+
+### Return Book - Book Not Found (Invalid)
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/00000000-0000-0000-0000-000000000000/loan
+
+###############################################################################
+# READING STATUS - Create, Update, Delete
+###############################################################################
+
+### Create or Update Reading Status - Backlog
+PUT {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/reading-status
+Content-Type: application/json
+
+{
+  "status": "Backlog"
+}
+
+### Create or Update Reading Status - Completed
+PUT {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/reading-status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+### Create or Update Reading Status - Abandoned
+PUT {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/reading-status
+Content-Type: application/json
+
+{
+  "status": "Abandoned"
+}
+
+### Create or Update Reading Status - Invalid Enum (should fail)
+PUT {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/reading-status
+Content-Type: application/json
+
+{
+  "status": "InvalidStatus"
+}
+
+### Create or Update Reading Status - Book Not Found (Invalid)
+PUT {{PersonalLibrary.API_HostAddress}}/api/books/00000000-0000-0000-0000-000000000000/reading-status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+### Delete Reading Status
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/reading-status
+
+### Delete Reading Status - Book Not Found (Invalid)
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/00000000-0000-0000-0000-000000000000/reading-status
+
+###############################################################################
+# COMPLETE WORKFLOW TEST
+###############################################################################
+
+### 1. Create a new book
+POST {{PersonalLibrary.API_HostAddress}}/api/books
+Content-Type: application/json
+
+{
+  "title": "Complete Workflow Test Book",
+  "author": "Author McAuthorface",
+  "description": "Testing complete workflow",
+  "ownershipStatus": "Owned"
+}
+
+### 2. Get all books (find the ID from previous response)
+GET {{PersonalLibrary.API_HostAddress}}/api/books
+Accept: application/json
+
+### 3. Add a rating (use bookId from step 1)
+POST {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/rating
+Content-Type: application/json
+
+{
+  "score": 9,
+  "notes": "Excellent test book!"
+}
+
+### 4. Set reading status (use bookId from step 1)
+PUT {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/reading-status
+Content-Type: application/json
+
+{
+  "status": "Completed"
+}
+
+### 5. Create a loan (use bookId from step 1)
+POST {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/loan
+Content-Type: application/json
+
+{
+  "borrowedTo": "Test User"
+}
+
+### 6. Get all active loans
+GET {{PersonalLibrary.API_HostAddress}}/api/loans
+Accept: application/json
+
+### 7. Return the book (use bookId from step 1)
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/loan
+
+### 8. Get loan history (use bookId from step 1)
+GET {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}/loans
+Accept: application/json
+
+### 9. Get book details to see all related data (use bookId from step 1)
+GET {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}
+Accept: application/json
+
+### 10. Delete the book (cascade delete all related data)
+DELETE {{PersonalLibrary.API_HostAddress}}/api/books/{{bookId}}
+
