@@ -10,7 +10,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "http://localhost:5000")
+            policy.WithOrigins(
+                    "http://localhost:5173",      // Frontend dev server
+                    "http://localhost:5000",      // Alternative port
+                    "http://frontend",            // Docker internal
+                    "http://frontend:80"          // Docker internal with port
+                  )
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -24,7 +29,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+// Comment out HTTPS redirection for Docker - re-enable for production with proper certificates
+// app.UseHttpsRedirection();
+
 app.UseCors("AllowFrontend");
 
 // Health check endpoint
