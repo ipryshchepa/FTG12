@@ -28,6 +28,32 @@ public class BookService : IBookService
     }
 
     /// <inheritdoc />
+    public async Task<PaginatedResponse<BookDetailsDto>> GetAllBooksPaginatedAsync(int page, int pageSize, string sortBy, string sortDirection)
+    {
+        // Validate pagination parameters
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+        if (pageSize > 100) pageSize = 100; // Max 100 items per page
+
+        // Validate and normalize sortBy
+        var validSortFields = new[] { "title", "author", "score", "ownershipstatus", "readingstatus", "loanee" };
+        sortBy = sortBy.ToLower();
+        if (!validSortFields.Contains(sortBy))
+        {
+            sortBy = "title";
+        }
+
+        // Validate sortDirection
+        sortDirection = sortDirection.ToLower();
+        if (sortDirection != "asc" && sortDirection != "desc")
+        {
+            sortDirection = "asc";
+        }
+
+        return await _bookRepository.GetAllPaginatedAsync(page, pageSize, sortBy, sortDirection);
+    }
+
+    /// <inheritdoc />
     public async Task<BookDetailsDto?> GetBookByIdAsync(Guid id)
     {
         var book = await _bookRepository.GetByIdAsync(id);

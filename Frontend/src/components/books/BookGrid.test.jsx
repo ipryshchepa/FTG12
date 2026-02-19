@@ -1,0 +1,242 @@
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import BookGrid from './BookGrid';
+
+// Mock formatters
+vi.mock('../../utils/formatters', () => ({
+  formatOwnershipStatus: (status) => status,
+  formatReadingStatus: (status) => status,
+  formatStarRating: (score) => `${score} stars`
+}));
+
+// Mock LoadingSpinner
+vi.mock('../shared/LoadingSpinner', () => ({
+  default: () => <div data-testid="loading-spinner">Loading...</div>
+}));
+
+describe('BookGrid Component', () => {
+  const mockBooks = [
+    {
+      id: '1',
+      title: 'Test Book 1',
+      author: 'Author McAuthorface',
+      score: 8,
+      ownershipStatus: 'Own',
+      readingStatus: 'Completed',
+      loanee: null
+    },
+    {
+      id: '2',
+      title: 'Test Book 2',
+      author: 'Author McAuthorface',
+      score: null,
+      ownershipStatus: 'WantToBuy',
+      readingStatus: null,
+      loanee: 'John Doe'
+    }
+  ];
+
+  const defaultProps = {
+    books: mockBooks,
+    loading: false,
+    onTitleClick: vi.fn(),
+    currentPage: 1,
+    pageSize: 10,
+    totalCount: 2,
+    onPageChange: vi.fn(),
+    sortBy: 'Title',
+    sortDirection: 'asc',
+    onSort: vi.fn()
+  };
+
+  it('should render table with books', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    expect(screen.getByText('Test Book 1')).toBeInTheDocument();
+    expect(screen.getByText('Test Book 2')).toBeInTheDocument();
+  });
+
+  it('should display all columns correctly', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    expect(screen.getByRole('columnheader', { name: /Title/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Author/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Score/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Ownership/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Reading Status/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Loanee/i })).toBeInTheDocument();
+  });
+
+  it('should render title as clickable link', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const titleLink = screen.getByText('Test Book 1');
+    expect(titleLink.tagName).toBe('A');
+  });
+
+  it('should call onTitleClick when title is clicked', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const titleLink = screen.getByText('Test Book 1');
+    fireEvent.click(titleLink);
+    
+    expect(defaultProps.onTitleClick).toHaveBeenCalledWith('1');
+  });
+
+  it('should display formatted score', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    expect(screen.getByText('8 stars')).toBeInTheDocument();
+  });
+
+  it('should display ownership status', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    expect(screen.getByText('Own')).toBeInTheDocument();
+    expect(screen.getByText('WantToBuy')).toBeInTheDocument();
+  });
+
+  it('should display reading status when present', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    expect(screen.getByText('Completed')).toBeInTheDocument();
+  });
+
+  it('should display loanee when book is loaned', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+  });
+
+  it('should display dash for missing score', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const rows = screen.getAllByRole('row');
+    expect(rows[2]).toHaveTextContent('-'); // Second data row should have dash for score
+  });
+
+  it('should display dash for missing reading status', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const rows = screen.getAllByRole('row');
+    expect(rows[2]).toHaveTextContent('-'); // Second data row should have dash
+  });
+
+  it('should show loading spinner when loading', () => {
+    render(<BookGrid {...defaultProps} loading={true} />);
+    
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+  });
+
+  it('should show empty state when no books', () => {
+    render(<BookGrid {...defaultProps} books={[]} />);
+    
+    expect(screen.getByText('No books in library. Add your first book!')).toBeInTheDocument();
+  });
+
+  it('should display pagination showing text', () => {
+    const props = {
+      ...defaultProps,
+      totalCount: 25,
+      currentPage: 1,
+      pageSize: 10
+    };
+    render(<BookGrid {...props} />);
+    
+    expect(screen.getByText('Showing 1-10 of 25 books')).toBeInTheDocument();
+  });
+
+  it('should disable Previous button on first page', () => {
+    render(<BookGrid {...defaultProps} totalCount={20} currentPage={1} />);
+    
+    const pagination = document.querySelector('.pagination');
+    const liElements = pagination.querySelectorAll('li');
+    const prevButton = liElements[0];
+    
+    expect(prevButton).toHaveClass('disabled');
+  });
+
+  it('should disable Next button on last page', () => {
+    const { container } = render(<BookGrid {...defaultProps} totalCount={10} currentPage={1} pageSize={10} />);
+    
+    // With only 10 items and pageSize 10, we're on the only/last page
+    // Pagination should not be shown when totalCount <= pageSize
+    const pagination = container.querySelector('.pagination');
+    expect(pagination).toBeNull();
+  });
+
+  it('should call onPageChange when Next is clicked', () => {
+    render(<BookGrid {...defaultProps} totalCount={20} currentPage={1} />);
+    
+    const pagination = document.querySelector('.pagination');
+    const liElements = pagination.querySelectorAll('li');
+    const nextButton = liElements[liElements.length - 1].querySelector('a');
+    fireEvent.click(nextButton);
+    
+    expect(defaultProps.onPageChange).toHaveBeenCalledWith(2);
+  });
+
+  it('should call onPageChange when Previous is clicked', () => {
+    render(<BookGrid {...defaultProps} totalCount={20} currentPage={2} />);
+    
+    const pagination = document.querySelector('.pagination');
+    const liElements = pagination.querySelectorAll('li');
+    const prevButton = liElements[0].querySelector('a');
+    fireEvent.click(prevButton);
+    
+    expect(defaultProps.onPageChange).toHaveBeenCalledWith(1);
+  });
+
+  it('should call onPageChange when page number is clicked', () => {
+    render(<BookGrid {...defaultProps} totalCount={30} currentPage={1} />);
+    
+    const pageButton = screen.getByText('2');
+    fireEvent.click(pageButton);
+    
+    expect(defaultProps.onPageChange).toHaveBeenCalledWith(2);
+  });
+
+  it('should hide pagination when totalCount <= pageSize', () => {
+    render(<BookGrid {...defaultProps} totalCount={5} pageSize={10} />);
+    
+    expect(screen.queryByText(/Showing/)).not.toBeInTheDocument();
+  });
+
+  it('should call onSort when sortable column header is clicked', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const titleHeader = screen.getByRole('columnheader', { name: /Title/i });
+    fireEvent.click(titleHeader);
+    
+    expect(defaultProps.onSort).toHaveBeenCalledWith('Title');
+  });
+
+  it('should display sort indicator on sorted column', () => {
+    render(<BookGrid {...defaultProps} sortBy="Title" sortDirection="asc" />);
+    
+    const titleHeader = screen.getByRole('columnheader', { name: /Title/i });
+    expect(titleHeader.textContent).toContain('↑');
+  });
+
+  it('should display descending sort indicator', () => {
+    render(<BookGrid {...defaultProps} sortBy="Author" sortDirection="desc" />);
+    
+    const authorHeader = screen.getByRole('columnheader', { name: /Author/i });
+    expect(authorHeader.textContent).toContain('↓');
+  });
+
+  it('should not display sort indicator on unsorted columns', () => {
+    render(<BookGrid {...defaultProps} sortBy="Title" sortDirection="asc" />);
+    
+    const authorHeader = screen.getByRole('columnheader', { name: 'Author' });
+    expect(authorHeader.textContent).not.toContain('↑');
+    expect(authorHeader.textContent).not.toContain('↓');
+  });
+
+  it('should make Loanee column sortable', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const loaneeHeader = screen.getByRole('columnheader', { name: 'Loanee' });
+    expect(loaneeHeader).toHaveClass('sortable');
+  });
+});

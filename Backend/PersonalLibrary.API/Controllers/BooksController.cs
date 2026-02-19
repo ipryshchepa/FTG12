@@ -26,15 +26,23 @@ public class BooksController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves all books in the library.
+    /// Retrieves all books in the library with optional pagination and sorting.
     /// </summary>
-    /// <returns>A list of all books with their details.</returns>
+    /// <param name="page">The page number (1-based, default: 1).</param>
+    /// <param name="pageSize">The number of items per page (default: 10, max: 100).</param>
+    /// <param name="sortBy">The field to sort by (default: 'Title'). Valid values: Title, Author, Score, OwnershipStatus, ReadingStatus, Loanee.</param>
+    /// <param name="sortDirection">The sort direction (default: 'asc'). Valid values: asc, desc.</param>
+    /// <returns>A paginated list of books with their details.</returns>
     [HttpGet]
-    [ProducesResponseType(typeof(List<BookDetailsDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<BookDetailsDto>>> GetAll()
+    [ProducesResponseType(typeof(PaginatedResponse<BookDetailsDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PaginatedResponse<BookDetailsDto>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string sortBy = "Title",
+        [FromQuery] string sortDirection = "asc")
     {
-        var books = await _bookService.GetAllBooksAsync();
-        return Ok(books);
+        var result = await _bookService.GetAllBooksPaginatedAsync(page, pageSize, sortBy, sortDirection);
+        return Ok(result);
     }
 
     /// <summary>

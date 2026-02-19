@@ -1,11 +1,30 @@
 import * as api from './api';
 
 /**
- * Get all books
- * @returns {Promise<Array>} Array of BookDetailsDto
+ * Get all books with optional pagination and sorting
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number (default: 1)
+ * @param {number} params.pageSize - Page size (default: 10)
+ * @param {string} params.sortBy - Sort field (default: 'Title')
+ * @param {string} params.sortDirection - Sort direction 'asc' or 'desc' (default: 'asc')
+ * @returns {Promise<Object>} Paginated response with items, totalCount, page, pageSize
  */
-export async function getAllBooks() {
-  return api.get('/api/books');
+export async function getAllBooks(params = {}) {
+  const {
+    page = 1,
+    pageSize = 10,
+    sortBy = 'Title',
+    sortDirection = 'asc'
+  } = params;
+
+  const queryParams = new URLSearchParams({
+    page: page.toString(),
+    pageSize: pageSize.toString(),
+    sortBy,
+    sortDirection
+  });
+
+  return api.get(`/api/books?${queryParams.toString()}`);
 }
 
 /**

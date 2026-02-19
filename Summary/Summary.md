@@ -208,3 +208,25 @@ Copilot was done soon after that, but that might be because he fixed most of the
 Prompt (Agent mode):
 
 Original prompt proposed by the copilot is ## Subplan 5: Frontend Infrastructure & Setup from \Summary\OriginalSubPlans.md. Final prompt contents are in \Plans\05-FrontendInfrastructure.md
+
+Result: 
+
+Looking back that plan could've been split into smaller plans as it had to create 40 plans, but in the end simplicity of the files didn't present any problems. What was interesting to me, copilot didn't have any issues with react tests and it had a lot of them with C# tests, while I expected it to be the opposite.
+
+Fix Request:
+
+update formatter.js and relevant tests to display up to ten stars instead of five
+
+Result:
+
+The only thing i needed to change, is that copilot decided to display 1-10 score range as 5 stars, with 1/2 character as a half-star.
+
+---
+
+Prompt: 
+
+Create seeding EFCore migration with imaginary books by imaginary authors Tolkien McTolkienface, Rowling McRowlingface, Dinniman McDinnimanface with various valid values, scores, statuses and loan history. Verify that migration is valid, executable and creates the data
+
+Result: 
+
+Copilot created enough data for my purposes. I liked that it used references to the mentioned authors to create silly book names and description instead of doing something generic. 

@@ -51,9 +51,10 @@ public class BookEndpointsTests : IClassFixture<ApiTestFixture>, IAsyncLifetime
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var books = await response.Content.ReadFromJsonAsync<List<BookDetailsDto>>(JsonOptions);
-        books.Should().NotBeNull();
-        books.Should().BeEmpty();
+        var result = await response.Content.ReadFromJsonAsync<PaginatedResponse<BookDetailsDto>>(JsonOptions);
+        result.Should().NotBeNull();
+        result!.Items.Should().BeEmpty();
+        result.TotalCount.Should().Be(0);
     }
 
     [Fact]
@@ -68,11 +69,12 @@ public class BookEndpointsTests : IClassFixture<ApiTestFixture>, IAsyncLifetime
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var books = await response.Content.ReadFromJsonAsync<List<BookDetailsDto>>(JsonOptions);
-        books.Should().NotBeNull();
-        books.Should().HaveCount(1);
-        books![0].Title.Should().Be("Test Book");
-        books[0].Author.Should().Be("Author McAuthorface");
+        var result = await response.Content.ReadFromJsonAsync<PaginatedResponse<BookDetailsDto>>(JsonOptions);
+        result.Should().NotBeNull();
+        result!.Items.Should().HaveCount(1);
+        result.TotalCount.Should().Be(1);
+        result.Items[0].Title.Should().Be("Test Book");
+        result.Items[0].Author.Should().Be("Author McAuthorface");
     }
 
     [Fact]

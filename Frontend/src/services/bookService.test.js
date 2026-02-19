@@ -6,14 +6,56 @@ vi.mock('./api');
 
 describe('Book Service', () => {
   describe('getAllBooks', () => {
-    it('should call api.get with correct endpoint', async () => {
-      const mockBooks = [{ id: 1, title: 'Test Book' }];
-      api.get.mockResolvedValueOnce(mockBooks);
+    it('should call api.get with default parameters', async () => {
+      const mockResponse = {
+        items: [{ id: 1, title: 'Test Book' }],
+        totalCount: 1,
+        page: 1,
+        pageSize: 10
+      };
+      api.get.mockResolvedValueOnce(mockResponse);
 
       const result = await bookService.getAllBooks();
 
-      expect(api.get).toHaveBeenCalledWith('/api/books');
-      expect(result).toEqual(mockBooks);
+      expect(api.get).toHaveBeenCalledWith('/api/books?page=1&pageSize=10&sortBy=Title&sortDirection=asc');
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should call api.get with custom parameters', async () => {
+      const mockResponse = {
+        items: [{ id: 1, title: 'Test Book' }],
+        totalCount: 1,
+        page: 2,
+        pageSize: 5
+      };
+      api.get.mockResolvedValueOnce(mockResponse);
+
+      const params = {
+        page: 2,
+        pageSize: 5,
+        sortBy: 'Author',
+        sortDirection: 'desc'
+      };
+
+      const result = await bookService.getAllBooks(params);
+
+      expect(api.get).toHaveBeenCalledWith('/api/books?page=2&pageSize=5&sortBy=Author&sortDirection=desc');
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should handle empty params object', async () => {
+      const mockResponse = {
+        items: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 10
+      };
+      api.get.mockResolvedValueOnce(mockResponse);
+
+      const result = await bookService.getAllBooks({});
+
+      expect(api.get).toHaveBeenCalledWith('/api/books?page=1&pageSize=10&sortBy=Title&sortDirection=asc');
+      expect(result).toEqual(mockResponse);
     });
   });
 

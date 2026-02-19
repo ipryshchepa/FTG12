@@ -1,0 +1,21 @@
+.dashboard-page {
+  padding: 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.dashboard-page h4 {
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 0.5rem;
+  }
+
+  .dashboard-page h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+}

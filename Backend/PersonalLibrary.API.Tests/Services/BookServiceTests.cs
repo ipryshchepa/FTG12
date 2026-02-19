@@ -247,4 +247,166 @@ public class BookServiceTests
             .WithMessage($"Book with ID {bookId} not found");
         _mockRepository.Verify(r => r.DeleteAsync(It.IsAny<Guid>()), Times.Never);
     }
+
+    [Fact]
+    public async Task GetAllBooksPaginatedAsync_WithValidParameters_ReturnsCurrentPage()
+    {
+        // Arrange
+        var expectedResponse = new PaginatedResponse<BookDetailsDto>
+        {
+            Items = new List<BookDetailsDto>
+            {
+                new() { Id = Guid.NewGuid(), Title = "Book 1", Author = "Author McAuthorface", OwnershipStatus = OwnershipStatus.Own },
+                new() { Id = Guid.NewGuid(), Title = "Book 2", Author = "Author McAuthorface", OwnershipStatus = OwnershipStatus.Own }
+            },
+            TotalCount = 20,
+            Page = 1,
+            PageSize = 10
+        };
+        _mockRepository.Setup(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _service.GetAllBooksPaginatedAsync(1, 10, "Title", "asc");
+
+        // Assert
+        result.Should().BeEquivalentTo(expectedResponse);
+        _mockRepository.Verify(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllBooksPaginatedAsync_WithInvalidPage_DefaultsToPageOne()
+    {
+        // Arrange
+        var expectedResponse = new PaginatedResponse<BookDetailsDto>
+        {
+            Items = new List<BookDetailsDto>(),
+            TotalCount = 0,
+            Page = 1,
+            PageSize = 10
+        };
+        _mockRepository.Setup(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _service.GetAllBooksPaginatedAsync(0, 10, "Title", "asc");
+
+        // Assert
+        result.Page.Should().Be(1);
+        _mockRepository.Verify(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllBooksPaginatedAsync_WithInvalidPageSize_DefaultsToTen()
+    {
+        // Arrange
+        var expectedResponse = new PaginatedResponse<BookDetailsDto>
+        {
+            Items = new List<BookDetailsDto>(),
+            TotalCount = 0,
+            Page = 1,
+            PageSize = 10
+        };
+        _mockRepository.Setup(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _service.GetAllBooksPaginatedAsync(1, 0, "Title", "asc");
+
+        // Assert
+        result.PageSize.Should().Be(10);
+        _mockRepository.Verify(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllBooksPaginatedAsync_WithPageSizeOverMax_CapsAtHundred()
+    {
+        // Arrange
+        var expectedResponse = new PaginatedResponse<BookDetailsDto>
+        {
+            Items = new List<BookDetailsDto>(),
+            TotalCount = 0,
+            Page = 1,
+            PageSize = 100
+        };
+        _mockRepository.Setup(r => r.GetAllPaginatedAsync(1, 100, "title", "asc"))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _service.GetAllBooksPaginatedAsync(1, 200, "Title", "asc");
+
+        // Assert
+        result.PageSize.Should().Be(100);
+        _mockRepository.Verify(r => r.GetAllPaginatedAsync(1, 100, "title", "asc"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllBooksPaginatedAsync_WithInvalidSortField_DefaultsToTitle()
+    {
+        // Arrange
+        var expectedResponse = new PaginatedResponse<BookDetailsDto>
+        {
+            Items = new List<BookDetailsDto>(),
+            TotalCount = 0,
+            Page = 1,
+            PageSize = 10
+        };
+        _mockRepository.Setup(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _service.GetAllBooksPaginatedAsync(1, 10, "InvalidField", "asc");
+
+        // Assert
+        _mockRepository.Verify(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAllBooksPaginatedAsync_WithInvalidSortDirection_DefaultsToAsc()
+    {
+        // Arrange
+        var expectedResponse = new PaginatedResponse<BookDetailsDto>
+        {
+            Items = new List<BookDetailsDto>(),
+            TotalCount = 0,
+            Page = 1,
+            PageSize = 10
+        };
+        _mockRepository.Setup(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _service.GetAllBooksPaginatedAsync(1, 10, "Title", "invalid");
+
+        // Assert
+        _mockRepository.Verify(r => r.GetAllPaginatedAsync(1, 10, "title", "asc"), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("Title")]
+    [InlineData("Author")]
+    [InlineData("Score")]
+    [InlineData("OwnershipStatus")]
+    [InlineData("ReadingStatus")]
+    [InlineData("Loanee")]
+    public async Task GetAllBooksPaginatedAsync_WithValidSortFields_AcceptsField(string sortField)
+    {
+        // Arrange
+        var expectedResponse = new PaginatedResponse<BookDetailsDto>
+        {
+            Items = new List<BookDetailsDto>(),
+            TotalCount = 0,
+            Page = 1,
+            PageSize = 10
+        };
+        var normalizedField = sortField.ToLower();
+        _mockRepository.Setup(r => r.GetAllPaginatedAsync(1, 10, normalizedField, "asc"))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _service.GetAllBooksPaginatedAsync(1, 10, sortField, "asc");
+
+        // Assert
+        _mockRepository.Verify(r => r.GetAllPaginatedAsync(1, 10, normalizedField, "asc"), Times.Once);
+    }
 }

@@ -14,6 +14,16 @@ public interface IBookService
     Task<List<BookDetailsDto>> GetAllBooksAsync();
 
     /// <summary>
+    /// Retrieves a paginated and sorted list of books with related entities.
+    /// </summary>
+    /// <param name="page">The page number (1-based).</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <param name="sortBy">The field to sort by.</param>
+    /// <param name="sortDirection">The sort direction ('asc' or 'desc').</param>
+    /// <returns>Paginated response with book details and pagination info.</returns>
+    Task<PaginatedResponse<BookDetailsDto>> GetAllBooksPaginatedAsync(int page, int pageSize, string sortBy, string sortDirection);
+
+    /// <summary>
     /// Retrieves a single book by its identifier.
     /// </summary>
     /// <param name="id">The book identifier.</param>
