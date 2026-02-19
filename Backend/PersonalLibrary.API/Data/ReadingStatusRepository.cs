@@ -23,6 +23,7 @@ public class ReadingStatusRepository : IReadingStatusRepository
     public async Task<ReadingStatus?> GetByBookIdAsync(Guid bookId)
     {
         return await _context.ReadingStatuses
+            .AsNoTracking()
             .FirstOrDefaultAsync(rs => rs.BookId == bookId);
     }
 
@@ -44,7 +45,8 @@ public class ReadingStatusRepository : IReadingStatusRepository
     /// <inheritdoc />
     public async Task DeleteByBookIdAsync(Guid bookId)
     {
-        var status = await GetByBookIdAsync(bookId);
+        var status = await _context.ReadingStatuses
+            .FirstOrDefaultAsync(rs => rs.BookId == bookId);
         if (status is not null)
         {
             _context.ReadingStatuses.Remove(status);

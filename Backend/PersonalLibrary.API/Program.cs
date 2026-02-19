@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.EntityFrameworkCore;
 using PersonalLibrary.API.Data;
 using PersonalLibrary.API.Filters;
@@ -11,12 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// Add DbContext with SQL Server
-builder.Services.AddDbContext<LibraryDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Add FluentValidation validators from the Validators namespace
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+// Add DbContext with SQL Server (skip in Testing environment - tests will configure InMemory)
+if (builder.Environment.EnvironmentName != "Testing")
+{
+    builder.Services.AddDbContext<LibraryDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 // Register repositories
 builder.Services.AddScoped<IBookRepository, BookRepository>();
@@ -41,6 +42,8 @@ builder.Services.AddControllers(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     // Use camelCase for property names
     options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    // Ignore circular references to prevent serialization cycles
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
 
 // Add CORS
@@ -84,3 +87,6 @@ app.MapGet("/api/health", () =>
 .WithName("HealthCheck");
 
 app.Run();
+
+// Make Program class accessible for integration testing
+public partial class Program { }

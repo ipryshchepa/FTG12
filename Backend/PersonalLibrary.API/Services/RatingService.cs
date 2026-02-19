@@ -27,6 +27,12 @@ public class RatingService : IRatingService
     /// <inheritdoc />
     public async Task CreateOrUpdateRatingAsync(Guid bookId, RatingDto ratingDto)
     {
+        // Validate score range
+        if (ratingDto.Score < 1 || ratingDto.Score > 10)
+        {
+            throw new BadRequestException("Score must be between 1 and 10");
+        }
+
         // Verify book exists
         var book = await _bookRepository.GetByIdAsync(bookId);
         if (book is null)
@@ -65,6 +71,13 @@ public class RatingService : IRatingService
         if (book is null)
         {
             throw new NotFoundException($"Book with ID {bookId} not found");
+        }
+
+        // Verify rating exists
+        var existingRating = await _ratingRepository.GetByBookIdAsync(bookId);
+        if (existingRating is null)
+        {
+            throw new NotFoundException($"Rating for book with ID {bookId} not found");
         }
 
         await _ratingRepository.DeleteByBookIdAsync(bookId);

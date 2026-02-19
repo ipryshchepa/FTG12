@@ -24,6 +24,7 @@ public class BookRepository : IBookRepository
     public async Task<List<BookDetailsDto>> GetAllAsync()
     {
         return await _context.Books
+            .AsNoTracking()
             .Include(b => b.Rating)
             .Include(b => b.ReadingStatus)
             .Include(b => b.Loans.Where(l => !l.IsReturned))
@@ -35,6 +36,7 @@ public class BookRepository : IBookRepository
     public async Task<BookDetailsDto?> GetByIdAsync(Guid id)
     {
         var book = await _context.Books
+            .AsNoTracking()
             .Include(b => b.Rating)
             .Include(b => b.ReadingStatus)
             .Include(b => b.Loans.Where(l => !l.IsReturned))

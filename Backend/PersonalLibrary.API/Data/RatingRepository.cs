@@ -23,6 +23,7 @@ public class RatingRepository : IRatingRepository
     public async Task<Rating?> GetByBookIdAsync(Guid bookId)
     {
         return await _context.Ratings
+            .AsNoTracking()
             .FirstOrDefaultAsync(r => r.BookId == bookId);
     }
 
@@ -44,7 +45,8 @@ public class RatingRepository : IRatingRepository
     /// <inheritdoc />
     public async Task DeleteByBookIdAsync(Guid bookId)
     {
-        var rating = await GetByBookIdAsync(bookId);
+        var rating = await _context.Ratings
+            .FirstOrDefaultAsync(r => r.BookId == bookId);
         if (rating is not null)
         {
             _context.Ratings.Remove(rating);

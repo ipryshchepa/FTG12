@@ -33,8 +33,8 @@ Fix request:
 I deceded I do not want authorisation in this application at the moment as the application is not planned to be public. Remove authorisation requirements from the instructions
 
 Result:
-
-For this and further fix requests I added generated instruction files as a context to the chat. I decided to change my requirements and reflect that in the instructions. I like that Copilot makes it easier to hone your ideas as you go.
+I
+For this request I added generated instruction files as a context to the chat. I decided to change my requirements and reflect that in the instructions. I like that Copilot makes it easier to hone your ideas as you go.
 
 Fix request:
 
@@ -135,7 +135,7 @@ Ask, if you need additional tools to create the plan or execute the task. Ask, i
 
 Result: 
 
-Copilot provided quite an extensive in 10 stages for the whole application development. While the plan seemed like what I want, I had few little details I wanted to change. I decided to ask copilot to split that plan into separate subplans, so that the whole process is more manageable. 
+Resulting plan is stored in \Summary\OriginalPlan.md. Copilot provided quite an extensive in 10 stages for the whole application development. While the plan seemed like what I want, I had few little details I wanted to change. I decided to ask copilot to split that plan into separate subplans, so that the whole process is more manageable. 
 
 Fix Request: 
 
@@ -151,7 +151,7 @@ Based on proposed stages split this plan into independent subplans that can be e
 
 Result: 
 
-Copilot provided 9 subplans (it combined two stages into one plan in this version) that I could use as prompts with minimal changes.
+Copilot provided 9 subplans (it combined two stages into one plan in this version) that I could use as prompts with minimal changes. Resulting subplans response is stored in \Summary\OriginalSubPlans.md. 
 
 ---
 
@@ -172,3 +172,23 @@ Original prompt proposed by the copilot is ## Subplan 2: Backend Data Layer from
 Result: 
 
 I didn't like the abundance of Book Dtos, so I asked copilot to update the plan to reduce the amount of DTOs. After the updated plan was implemented I reviewed the code and noticed that Copilot did not include display text for enums, and Ids for DTOs, so I had to fix with the separate prompts.
+
+---
+
+Prompt (Agent mode):
+
+Original prompt proposed by the copilot is ## Subplan 3: Backend Services & API Endpoints from \Summary\OriginalSubPlans.md. Final prompt contents are in \Plans\03-BackendServicesAndAPIEndpoints.md 
+
+Result: 
+
+I asked copilot to modify the original prompt according to changes I made in the previous part. And after that I decided to ask it to replace Minimal API with RESTful API. But with the updated pland this was the first prompt where I did not feel the need to alter the results.
+
+---
+
+Prompt (Agent mode):
+
+Original prompt proposed by the copilot is ## Subplan 4: Backend Testing Infrastructure from \Summary\OriginalSubPlans.md. Final prompt contents are in \Plans\04-BackendTesting.md
+
+Result: 
+
+I asked copilot to modify the original prompt according to changes I made in the previous part. After requesting changes for this and previous plan I asked copilot to verify the plan and fix any issues if found. It turned out that Copilot was reckless in its changes, and left some duplicates in the tasks, trimmmed some unexpectedly, or left typos. It looks like that it is a good practice to ask copilot to reread the documentit creates in its entirety after making it pay attention only to small parts of the document.

@@ -65,6 +65,13 @@ public class ReadingStatusService : IReadingStatusService
             throw new NotFoundException($"Book with ID {bookId} not found");
         }
 
+        // Verify reading status exists
+        var existingStatus = await _readingStatusRepository.GetByBookIdAsync(bookId);
+        if (existingStatus is null)
+        {
+            throw new NotFoundException($"Reading status for book with ID {bookId} not found");
+        }
+
         await _readingStatusRepository.DeleteByBookIdAsync(bookId);
     }
 }

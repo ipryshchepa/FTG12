@@ -23,6 +23,7 @@ public class LoanRepository : ILoanRepository
     public async Task<Loan?> GetActiveLoanByBookIdAsync(Guid bookId)
     {
         return await _context.Loans
+            .AsNoTracking()
             .FirstOrDefaultAsync(l => l.BookId == bookId && !l.IsReturned);
     }
 
@@ -30,6 +31,7 @@ public class LoanRepository : ILoanRepository
     public async Task<List<Loan>> GetAllActiveLoansAsync()
     {
         return await _context.Loans
+            .AsNoTracking()
             .Include(l => l.Book)
             .Where(l => !l.IsReturned)
             .OrderBy(l => l.LoanDate)
@@ -40,6 +42,7 @@ public class LoanRepository : ILoanRepository
     public async Task<List<Loan>> GetLoanHistoryByBookIdAsync(Guid bookId)
     {
         return await _context.Loans
+            .AsNoTracking()
             .Where(l => l.BookId == bookId)
             .OrderByDescending(l => l.LoanDate)
             .ToListAsync();
@@ -56,7 +59,8 @@ public class LoanRepository : ILoanRepository
     /// <inheritdoc />
     public async Task ReturnLoanAsync(Guid bookId)
     {
-        var loan = await GetActiveLoanByBookIdAsync(bookId);
+        var loan = await _context.Loans
+            .FirstOrDefaultAsync(l => l.BookId == bookId && !l.IsReturned);
         if (loan is not null)
         {
             loan.IsReturned = true;

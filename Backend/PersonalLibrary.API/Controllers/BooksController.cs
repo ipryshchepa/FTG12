@@ -77,7 +77,6 @@ public class BooksController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(Guid id, [FromBody] BookDto bookDto)
     {
-        bookDto.Id = id;
         await _bookService.UpdateBookAsync(id, bookDto);
         return NoContent();
     }

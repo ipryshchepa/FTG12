@@ -50,3 +50,13 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Test Results
+TestResults/
+**/TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+test-results/
+*.runsettings.user
