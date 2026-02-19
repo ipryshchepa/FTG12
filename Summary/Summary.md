@@ -192,3 +192,19 @@ Original prompt proposed by the copilot is ## Subplan 4: Backend Testing Infrast
 Result: 
 
 I asked copilot to modify the original prompt according to changes I made in the previous part. After requesting changes for this and previous plan I asked copilot to verify the plan and fix any issues if found. It turned out that Copilot was reckless in its changes, and left some duplicates in the tasks, trimmmed some unexpectedly, or left typos. It looks like that it is a good practice to ask copilot to reread the documentit creates in its entirety after making it pay attention only to small parts of the document.
+
+Looking back I underestimated the scope of the testing required and should've split this plan into separate plans at least for unit and integration tests. While I requested 100% test to pass, when copilot was done, he reported only 90% success rate and 60% coverage, while I requested 80%. Copilot struggled to fix all the tests and I decided to make an additional prompt to make him work through tests one by one. It still struggled with some test going as far as adding test related code into the service itself, so I had to ask him to come up with a different solution.
+
+Fix request: 
+
+Fix unit tests and integration tests. Do not try to fix all the files at once. Only move to the next file when you fixed the tests in the current one. All tests should pass before you finish your work
+
+Result: 
+
+Copilot was done soon after that, but that might be because he fixed most of the issues when I stopped him to make this prompt.
+
+---
+
+Prompt (Agent mode):
+
+Original prompt proposed by the copilot is ## Subplan 5: Frontend Infrastructure & Setup from \Summary\OriginalSubPlans.md. Final prompt contents are in \Plans\05-FrontendInfrastructure.md
