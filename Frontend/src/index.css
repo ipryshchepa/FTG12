@@ -24,3 +24,50 @@ body {
 footer.page-footer {
   margin-top: auto;
 }
+
+/* Error message styles */
+.error-container {
+  margin: 2rem 0;
+}
+
+.error-container .card {
+  border-left: 4px solid #c62828;
+}
+
+/* Loading overlay styles */
+.loading-container {
+  padding: 4rem 0;
+}
+
+.loading-message {
+  margin-top: 1rem;
+  color: #666;
+  font-size: 1.1em;
+}
+
+/* Empty state styles */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #666;
+}
+
+.empty-state i {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #bbb;
+}
+
+/* Spacing utilities */
+.mt-1 { margin-top: 1rem; }
+.mt-2 { margin-top: 2rem; }
+.mb-1 { margin-bottom: 1rem; }
+.mb-2 { margin-bottom: 2rem; }
+
+/* Page content padding */
+main.container {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  min-height: calc(100vh - 64px);
+}
+
