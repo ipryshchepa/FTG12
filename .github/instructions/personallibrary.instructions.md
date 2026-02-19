@@ -31,7 +31,7 @@ Personal Library is a full-stack web application for managing personal book coll
 2. **Data Exposure**: Never expose sensitive system information in error messages
 
 ## Testing Requirements
-
+- Use books by imaginary author "Author McAuthorface" for testing purposes
 - **Minimum 80% code coverage** for business logic, components, and services
 - All API endpoints and user interactions must have tests
 - **Pre-build Requirement**: All tests must pass before build succeeds
