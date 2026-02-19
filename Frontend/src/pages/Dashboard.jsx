@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBooks } from '../hooks/useBooks';
+import { useModal } from '../hooks/useModal';
 import BookGrid from '../components/books/BookGrid';
+import AddBookModal from '../components/books/AddBookModal';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import ErrorMessage from '../components/shared/ErrorMessage';
+import Button from '../components/shared/Button';
 import './Dashboard.css';
 
 /**
@@ -12,6 +15,7 @@ import './Dashboard.css';
 function Dashboard() {
   const navigate = useNavigate();
   const { books, loading, error, totalCount, fetchBooks } = useBooks();
+  const addBookModal = useModal();
   
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
@@ -56,10 +60,22 @@ function Dashboard() {
     });
   };
 
+  const handleAddBookSuccess = () => {
+    // Refresh the books grid after successful book addition
+    fetchBooks({
+      page: currentPage,
+      pageSize,
+      sortBy,
+      sortDirection
+    });
+  };
+
   if (error) {
     return (
       <div className="dashboard-page">
-        <h4>Books Dashboard</h4>
+        <div className="dashboard-header">
+          <h4>Books Dashboard</h4>
+        </div>
         <ErrorMessage message={error} onRetry={handleRetry} />
       </div>
     );
@@ -67,7 +83,17 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <h4>Books Dashboard</h4>
+      <div className="dashboard-header">
+        <h4>Books Dashboard</h4>
+        <Button
+          variant="primary"
+          onClick={addBookModal.openModal}
+          icon="add"
+        >
+          Add Book
+        </Button>
+      </div>
+      
       <BookGrid
         books={books}
         loading={loading}
@@ -79,6 +105,12 @@ function Dashboard() {
         sortBy={sortBy}
         sortDirection={sortDirection}
         onSort={handleSort}
+      />
+
+      <AddBookModal
+        isOpen={addBookModal.isOpen}
+        onClose={addBookModal.closeModal}
+        onSuccess={handleAddBookSuccess}
       />
     </div>
   );

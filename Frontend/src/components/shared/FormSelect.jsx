@@ -31,12 +31,12 @@ function FormSelect({
   }, []);
 
   useEffect(() => {
-    // Reinitialize when options or value change
+    // Reinitialize when options change
     if (instanceRef.current) {
       instanceRef.current.destroy();
       instanceRef.current = M.FormSelect.init(selectRef.current);
     }
-  }, [options, value]);
+  }, [options]);
 
   return (
     <div className="input-field">

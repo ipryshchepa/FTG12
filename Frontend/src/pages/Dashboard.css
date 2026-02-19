@@ -4,8 +4,15 @@
   margin: 0 auto;
 }
 
-.dashboard-page h4 {
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 1.5rem;
+}
+
+.dashboard-page h4 {
+  margin: 0;
   color: #333;
 }
 
@@ -14,8 +21,13 @@
     padding: 0.5rem;
   }
 
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
   .dashboard-page h4 {
     font-size: 1.5rem;
-    margin-bottom: 1rem;
   }
 }

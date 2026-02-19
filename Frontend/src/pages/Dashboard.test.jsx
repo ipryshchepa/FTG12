@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import * as booksHook from '../hooks/useBooks';
@@ -30,6 +31,20 @@ vi.mock('../components/books/BookGrid', () => ({
   )
 }));
 
+vi.mock('../components/books/AddBookModal', () => ({
+  default: ({ isOpen, onClose, onSuccess }) => (
+    isOpen ? (
+      <div data-testid="add-book-modal">
+        <button onClick={onClose}>Close Modal</button>
+        <button onClick={() => {
+          onSuccess();
+          onClose();
+        }}>Submit Book</button>
+      </div>
+    ) : null
+  )
+}));
+
 vi.mock('../components/shared/LoadingSpinner', () => ({
   default: () => <div data-testid="loading-spinner">Loading...</div>
 }));
@@ -40,6 +55,14 @@ vi.mock('../components/shared/ErrorMessage', () => ({
       <p>{message}</p>
       <button onClick={onRetry}>Retry</button>
     </div>
+  )
+}));
+
+vi.mock('../components/shared/Button', () => ({
+  default: ({ children, onClick, icon }) => (
+    <button onClick={onClick} data-icon={icon}>
+      {children}
+    </button>
   )
 }));
 
@@ -296,5 +319,113 @@ describe('Dashboard Page', () => {
     // Note: This test verifies the logic exists, actual toggle behavior 
     // requires more complex state mocking
     expect(mockFetchBooks).toHaveBeenCalled();
+  });
+
+  it('should render Add Book button', () => {
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: [],
+      loading: false,
+      error: null,
+      totalCount: 0,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    expect(screen.getByRole('button', { name: /Add Book/i })).toBeInTheDocument();
+  });
+
+  it('should open AddBookModal when Add Book button is clicked', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: [],
+      loading: false,
+      error: null,
+      totalCount: 0,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const addButton = screen.getByRole('button', { name: /Add Book/i });
+    await user.click(addButton);
+
+    expect(screen.getByTestId('add-book-modal')).toBeInTheDocument();
+  });
+
+  it('should refresh books grid after successful book addition', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: [],
+      loading: false,
+      error: null,
+      totalCount: 0,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Open modal
+    const addButton = screen.getByRole('button', { name: /Add Book/i });
+    await user.click(addButton);
+
+    // Clear previous calls
+    mockFetchBooks.mockClear();
+
+    // Submit book
+    const submitButton = screen.getByRole('button', { name: /Submit Book/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockFetchBooks).toHaveBeenCalledWith({
+        page: 1,
+        pageSize: 10,
+        sortBy: 'Title',
+        sortDirection: 'asc'
+      });
+    });
+  });
+
+  it('should close modal after successful book addition', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: [],
+      loading: false,
+      error: null,
+      totalCount: 0,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Open modal
+    const addButton = screen.getByRole('button', { name: /Add Book/i });
+    await user.click(addButton);
+
+    expect(screen.getByTestId('add-book-modal')).toBeInTheDocument();
+
+    // Submit book
+    const submitButton = screen.getByRole('button', { name: /Submit Book/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('add-book-modal')).not.toBeInTheDocument();
+    });
   });
 });

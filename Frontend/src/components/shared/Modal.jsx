@@ -7,12 +7,23 @@ import PropTypes from 'prop-types';
 function Modal({ isOpen, onClose, title, children, maxWidth = '600px' }) {
   const modalRef = useRef(null);
   const instanceRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+
+  // Keep onClose ref up to date
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     // Initialize Materialize modal
     if (modalRef.current && typeof M !== 'undefined') {
       instanceRef.current = M.Modal.init(modalRef.current, {
-        onCloseEnd: onClose,
+        onCloseEnd: () => {
+          // Call the latest onClose callback
+          if (onCloseRef.current) {
+            onCloseRef.current();
+          }
+        },
         dismissible: true
       });
     }
@@ -23,7 +34,8 @@ function Modal({ isOpen, onClose, title, children, maxWidth = '600px' }) {
         instanceRef.current.destroy();
       }
     };
-  }, [onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only initialize once
 
   useEffect(() => {
     // Open or close modal based on isOpen prop
