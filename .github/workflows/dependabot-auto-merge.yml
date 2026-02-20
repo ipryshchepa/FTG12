@@ -1,0 +1,58 @@
+name: Dependabot Auto-merge
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  rerun-on-failure:
+    name: Rerun failed pipeline
+    runs-on: ubuntu-latest
+    # Only rerun on the first attempt to prevent infinite retry loops
+    if: >
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt == 1
+    steps:
+      - name: Rerun failed workflow jobs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh run rerun ${{ github.event.workflow_run.id }} --failed --repo ${{ github.repository }}
+
+  auto-merge:
+    name: Auto-merge when checks pass
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Find pull request
+        id: find-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          PR_NUMBER=$(gh api "/repos/${{ github.repository }}/pulls?state=open" \
+            --jq ".[] | select(.head.sha == \"$HEAD_SHA\") | .number")
+          echo "pr-number=$PR_NUMBER" >> $GITHUB_OUTPUT
+
+      # Approves the PR as github-actions[bot]; requires branch protection to accept
+      # reviews from github-actions[bot] or have no required-reviewer restrictions.
+      - name: Approve pull request
+        if: steps.find-pr.outputs.pr-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr review ${{ steps.find-pr.outputs.pr-number }} --approve --repo ${{ github.repository }}
+
+      - name: Enable auto-merge
+        if: steps.find-pr.outputs.pr-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge ${{ steps.find-pr.outputs.pr-number }} --auto --squash --repo ${{ github.repository }}
