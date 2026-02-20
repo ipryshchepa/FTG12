@@ -192,3 +192,151 @@ Original prompt proposed by the copilot is ## Subplan 4: Backend Testing Infrast
 Result: 
 
 I asked copilot to modify the original prompt according to changes I made in the previous part. After requesting changes for this and previous plan I asked copilot to verify the plan and fix any issues if found. It turned out that Copilot was reckless in its changes, and left some duplicates in the tasks, trimmmed some unexpectedly, or left typos. It looks like that it is a good practice to ask copilot to reread the documentit creates in its entirety after making it pay attention only to small parts of the document.
+
+Looking back I underestimated the scope of the testing required and should've split this plan into separate plans at least for unit and integration tests. While I requested 100% test to pass, when copilot was done, he reported only 90% success rate and 60% coverage, while I requested 80%. Copilot struggled to fix all the tests and I decided to make an additional prompt to make him work through tests one by one. It still struggled with some test going as far as adding test related code into the service itself, so I had to ask him to come up with a different solution.
+
+Fix request: 
+
+Fix unit tests and integration tests. Do not try to fix all the files at once. Only move to the next file when you fixed the tests in the current one. All tests should pass before you finish your work
+
+Result: 
+
+Copilot was done soon after that, but that might be because he fixed most of the issues when I stopped him to make this prompt.
+
+---
+
+Prompt (Agent mode):
+
+Analyse plans 5, 6, 7 and restructure them in a way so that one plan would correlate to one page or popup so that each plan would include infrastructure, components and testing for that page or popup. Output results into new files in /Plans folder. Include neccessary preparations or common code into the first of these plans
+
+Result:
+
+I decided to restructure the layered order of development proposed by copilot (infrastructure -> components -> tests) to feature specific plans. Original prompt yielded infrastructure plan with a lot of component specific logic, and the plans were missing modules, so I decided to undo the changes and rewrite the prompt with more details. 
+
+Fix request:
+
+Analyse plans 5, 6, 7 and restructure them in a way so that one plan would correlate to one piece of functionality with api, infrastructure, components and testing. Output results into new files in /Plans folder. Include neccessary preparations or common code into the first of these plans. Do not prepare code examples.
+Order of plans:
+1. Common
+2. Books dashboard with grid but no actions
+3. Loaned books dashboard with grid but no actions
+4. Add book button
+5. View book details action in book grid
+6. Update book action in book grid
+7. Rate book action in book grid
+8. Loan book action in book grid and loaned book grid
+9. Return book action in book grid and loaned book grid
+10. View loan history action in book grid and loaned book grid
+
+Result:
+
+This prompt created the plans more or less as I expected. Also copilot created plans for components I forgot to mention, which I found quite pleasing.
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\05-FrontendInfrastructure.md
+
+Result: 
+
+Looking back that plan could've been split into smaller plans as it had to create 40 plans, but in the end simplicity of the files didn't present any problems. What was interesting to me, copilot didn't have any issues with react tests and it had a lot of them with C# tests, while I expected it to be the opposite.
+
+Fix Request:
+
+update formatter.js and relevant tests to display up to ten stars instead of five
+
+Result:
+
+The only thing i needed to change, is that copilot decided to display 1-10 score range as 5 stars, with 1/2 character as a half-star.
+
+---
+
+Prompt (Agent mode): 
+
+Create seeding EFCore migration with imaginary books by imaginary authors Tolkien McTolkienface, Rowling McRowlingface, Dinniman McDinnimanface with various valid values, scores, statuses and loan history. Verify that migration is valid, executable and creates the data
+
+Result: 
+
+Copilot created enough data for my purposes. I liked that it used references to the mentioned authors to create silly book names and description instead of doing something generic. 
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\06-frontend-books-dashboard-view.md
+
+Result: 
+
+The prompt yielded a simple grid view. I noticed that I forgot to mention sorting and paging for the grid, so I had to ask for that in a separate prompt. Copilot struggled with the sorting logic for a column responsible for somewhat complex relationship, so I had to ask him to iterate on the logic a few times.
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\07-frontend-loaned-books-view.md
+
+Result: 
+
+This page is quite similar in logic with the books dashboard, so copilot didn't struggle with the prompt and I received what I expected. I liked that based on existing books dashboard copilot added paging and sorting even though that wasn't mentioned in the prompt. Although Copilot added sorting and paging mentions to plan after its implementation.
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\08-frontend-add-book.md
+
+Result: 
+
+Copilot created book creation popup. The popup was broken, it closed on any field value change, took too much unnecessary space and had a scroll. As i do not have a lot of fields on a book entity I wanted more compact page.
+I liked that I could just decribe my issue with the page without adding qualifiers that I'm giving copilot a task, and agent mode took it as a bug fix request. Updating the page layout took a few iterations with basically asking 'Make the page more compact' a few times with little changes.
+
+---
+
+Prompt (Agent mode):
+
+Create short and concise prompt for plan implementation that will get currently selected plan file as the input parameter, implement it, and summarise result to Plans folder
+
+Result:
+
+I wanted to try generating prompts via copilot. My first attempt at generating prompt yielded quite large prompt file with a lot of unnecessary details, so in my second attempt I added "short and concise" qualifier and that helped.
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\09-frontend-view-book-details.md
+
+Result: 
+
+Copilot created book details page. Again I didn't like the amount of space the page took, but this time only one additional prompt with more compact page request was required to make the page fit the screen. 
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\10-frontend-update-book.md
+
+Result: 
+
+Copilot updated book details page and added update button that changed the view from read only details to form with the inputs. As it followed closely the layout of the read only details, I didn't have any issues with the page size. Copilot had an issue with the button margins, and the buttons were always touching each other. Text requests to fix that didn't help, copilot made changes that didn't work. Only by providing copilot screenshot with the buttons, it figured out that it had issues with button component styling.
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\11-frontend-rate-book.md
+
+Result:
+
+Copilot added Rate button to a book dashboard and details page. I liked the results and didn't have any issues.
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\12-frontend-loan-return-book.md
+
+Result:
+
+Copilot added Rate button to a book dashboard and details page. I liked the results and didn't have any issues.

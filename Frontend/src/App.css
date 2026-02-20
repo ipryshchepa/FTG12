@@ -1,3 +1,4 @@
+/* Card transitions */
 .card {
   transition: transform 0.2s;
 }
@@ -10,3 +11,71 @@
   display: flex !important;
   align-items: center;
 }
+
+/* Star rating styles */
+.star-rating {
+  color: #ffd700;
+  font-size: 1.2em;
+}
+
+/* Grid action buttons */
+.grid-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.grid-actions .btn-small {
+  margin: 0;
+}
+
+/* Modal content layout */
+.modal .modal-content h4 {
+  margin-top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal .modal-close {
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}
+
+/* Form spacing */
+.input-field {
+  margin-bottom: 1.5rem;
+}
+
+/* Star rating styles */
+.star-rating {
+  color: #ffd700;
+  font-size: 1.2em;
+}
+
+/* Rating stars display in details */
+.rating-stars {
+  display: inline-block;
+}
+
+/* Responsive styles */
+@media only screen and (max-width: 600px) {
+  .container {
+    width: 95%;
+  }
+  
+  .grid-actions {
+    flex-direction: column;
+  }
+  
+  .grid-actions .btn-small {
+    width: 100%;
+  }
+  
+  /* Adjust star rating on mobile */
+  .star-rating {
+    font-size: 1em;
+  }
+}
+

@@ -1,0 +1,24 @@
+.add-book-form-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.add-book-form-row > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.add-book-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  background-color: transparent;
+  padding-left: 0;
+}
+
+/* Ensure modal content is scrollable if needed */
+.modal .modal-content {
+  max-height: 90vh;
+  overflow-y: auto;
+}
