@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   backend-test:
     name: Backend Tests
@@ -38,16 +42,17 @@ jobs:
         cat ./coverage/report/Summary.txt
         
         # Extract line coverage percentage
-        COVERAGE=$(grep "Line coverage:" ./coverage/report/Summary.txt | grep -oP '\d+\.\d+')
+        COVERAGE=$(grep "Line coverage:" ./coverage/report/Summary.txt | grep -oP '\d+\.\d+' || echo "0")
         echo "Backend Coverage: $COVERAGE%"
         echo "BACKEND_COVERAGE=$COVERAGE" >> $GITHUB_ENV
         
-        # Check if coverage meets 80% threshold
-        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-          echo "❌ Backend coverage $COVERAGE% is below 80% threshold"
+        # Check if coverage meets 80% threshold using awk
+        THRESHOLD=80
+        if awk -v cov="$COVERAGE" -v thresh="$THRESHOLD" 'BEGIN { exit (cov < thresh) ? 0 : 1 }'; then
+          echo "❌ Backend coverage $COVERAGE% is below $THRESHOLD% threshold"
           exit 1
         else
-          echo "✅ Backend coverage $COVERAGE% meets the 80% threshold"
+          echo "✅ Backend coverage $COVERAGE% meets the $THRESHOLD% threshold"
         fi
       
     - name: Upload coverage reports
@@ -109,16 +114,17 @@ jobs:
       
     - name: Check coverage threshold
       run: |
-        COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+        COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.statements.pct' || echo "0")
         echo "Frontend Coverage: $COVERAGE%"
         echo "FRONTEND_COVERAGE=$COVERAGE" >> $GITHUB_ENV
         
-        # Check if coverage meets 80% threshold
-        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-          echo "❌ Frontend coverage $COVERAGE% is below 80% threshold"
+        # Check if coverage meets 80% threshold using awk
+        THRESHOLD=80
+        if awk -v cov="$COVERAGE" -v thresh="$THRESHOLD" 'BEGIN { exit (cov < thresh) ? 0 : 1 }'; then
+          echo "❌ Frontend coverage $COVERAGE% is below $THRESHOLD% threshold"
           exit 1
         else
-          echo "✅ Frontend coverage $COVERAGE% meets the 80% threshold"
+          echo "✅ Frontend coverage $COVERAGE% meets the $THRESHOLD% threshold"
         fi
       working-directory: Frontend
       
