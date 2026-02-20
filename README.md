@@ -154,6 +154,15 @@ Coverage reports are automatically generated and available:
 
 No external services or secrets required - everything runs natively in GitHub Actions!
 
+### Testing CI/CD Pipeline
+
+To verify that all CI/CD checks are working correctly:
+1. Create a test branch from `main`
+2. Make a small change (e.g., documentation update)
+3. Create a pull request
+4. Verify all status checks pass (backend tests, frontend tests, Docker build, CodeQL)
+5. Review coverage reports in PR comments and workflow artifacts
+
 ### Branch Protection
 
 Recommended branch protection rules for `main` branch:
