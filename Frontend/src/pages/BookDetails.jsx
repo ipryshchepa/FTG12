@@ -5,6 +5,12 @@ import { formatOwnershipStatus, formatReadingStatus, formatStarRating, formatDat
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import ErrorMessage from '../components/shared/ErrorMessage';
 import Button from '../components/shared/Button';
+import FormInput from '../components/shared/FormInput';
+import FormSelect from '../components/shared/FormSelect';
+import FormTextarea from '../components/shared/FormTextarea';
+import { useToast } from '../hooks/useToast';
+import { validateTitle, validateAuthor, validateYear } from '../utils/validators';
+import { MAX_LENGTHS, OWNERSHIP_STATUS_OPTIONS } from '../constants';
 
 /**
  * Book Details page - displays complete book information
@@ -12,9 +18,15 @@ import Button from '../components/shared/Button';
 function BookDetails() {
   const { bookId } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [formData, setFormData] = useState(null);
+  const [originalData, setOriginalData] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchBookDetails = async () => {
     try {
@@ -22,6 +34,19 @@ function BookDetails() {
       setError(null);
       const data = await bookService.getBookDetails(bookId);
       setBook(data);
+      // Initialize form data
+      const bookFormData = {
+        title: data.title || '',
+        author: data.author || '',
+        description: data.description || '',
+        notes: data.notes || '',
+        isbn: data.isbn || '',
+        publishedYear: data.publishedYear || '',
+        pageCount: data.pageCount || '',
+        ownershipStatus: data.ownershipStatus || ''
+      };
+      setFormData(bookFormData);
+      setOriginalData(bookFormData);
     } catch (err) {
       if (err.status === 404) {
         setError('Book not found');
@@ -39,6 +64,109 @@ function BookDetails() {
 
   const handleBack = () => {
     navigate('/');
+  };
+
+  const handleEdit = () => {
+    setEditing(true);
+  };
+
+  const handleCancel = () => {
+    setFormData(originalData);
+    setFormErrors({});
+    setEditing(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error for this field
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: null
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Validate title
+    const titleError = validateTitle(formData.title);
+    if (titleError) newErrors.title = titleError;
+
+    // Validate author
+    const authorError = validateAuthor(formData.author);
+    if (authorError) newErrors.author = authorError;
+
+    // Validate optional fields
+    if (formData.description && formData.description.length > MAX_LENGTHS.DESCRIPTION) {
+      newErrors.description = `Description must not exceed ${MAX_LENGTHS.DESCRIPTION} characters`;
+    }
+
+    if (formData.notes && formData.notes.length > MAX_LENGTHS.NOTES) {
+      newErrors.notes = `Notes must not exceed ${MAX_LENGTHS.NOTES} characters`;
+    }
+
+    if (formData.isbn && formData.isbn.length > MAX_LENGTHS.ISBN) {
+      newErrors.isbn = `ISBN must not exceed ${MAX_LENGTHS.ISBN} characters`;
+    }
+
+    // Validate published year if provided
+    if (formData.publishedYear) {
+      const yearError = validateYear(formData.publishedYear);
+      if (yearError) newErrors.publishedYear = yearError;
+    }
+
+    // Validate page count if provided
+    if (formData.pageCount) {
+      const pageCount = parseInt(formData.pageCount, 10);
+      if (isNaN(pageCount) || pageCount < 1) {
+        newErrors.pageCount = 'Page count must be a positive number';
+      }
+    }
+
+    setFormErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) {
+      showToast('Please fix validation errors', 'error');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Prepare payload
+      const payload = {
+        id: parseInt(bookId, 10),
+        title: formData.title.trim(),
+        author: formData.author.trim(),
+        description: formData.description.trim() || null,
+        notes: formData.notes.trim() || null,
+        isbn: formData.isbn.trim() || null,
+        publishedYear: formData.publishedYear ? parseInt(formData.publishedYear, 10) : null,
+        pageCount: formData.pageCount ? parseInt(formData.pageCount, 10) : null,
+        ownershipStatus: formData.ownershipStatus
+      };
+
+      await bookService.updateBook(bookId, payload);
+      
+      showToast('Book updated successfully!', 'success');
+      setEditing(false);
+      await fetchBookDetails(); // Refresh book data
+    } catch (err) {
+      console.error('Error updating book:', err);
+      const errorMessage = err.message || 'Failed to update book. Please try again.';
+      showToast(errorMessage, 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (loading) {
@@ -64,12 +192,23 @@ function BookDetails() {
 
   return (
     <div className="book-details-page container">
-      <div className="row" style={{ marginBottom: '10px' }}>
+      <div className="row" style={{ marginBottom: '20px' }}>
         <div className="col s12">
           <Button onClick={handleBack} variant="secondary">
             <i className="material-icons left">arrow_back</i>
             Back to Dashboard
           </Button>
+          {!editing && (
+            <Button 
+              onClick={handleEdit} 
+              variant="primary" 
+              style={{ marginLeft: '15px' }}
+              disabled={editing}
+            >
+              <i className="material-icons left">edit</i>
+              Edit
+            </Button>
+          )}
         </div>
       </div>
 
@@ -78,36 +217,149 @@ function BookDetails() {
         <div className="col s12">
           <div className="card">
             <div className="card-content" style={{ paddingBottom: '10px' }}>
-              <h4 style={{ marginTop: '0', marginBottom: '5px' }}>{book.title}</h4>
-              <h5 className="grey-text" style={{ marginTop: '0', marginBottom: '10px' }}>{book.author}</h5>
-              
-              <div className="row" style={{ marginBottom: '5px' }}>
-                <div className="col s12 m3">
-                  <strong>ISBN:</strong> {book.isbn || 'N/A'}
-                </div>
-                <div className="col s12 m3">
-                  <strong>Published Year:</strong> {book.publishedYear || 'N/A'}
-                </div>
-                <div className="col s12 m3">
-                  <strong>Page Count:</strong> {book.pageCount || 'N/A'}
-                </div>
-                <div className="col s12 m3">
-                  <strong>Ownership:</strong> {formatOwnershipStatus(book.ownershipStatus)}
-                </div>
-              </div>
-              
-              {book.description && (
-                <div style={{ marginTop: '10px' }}>
-                  <strong>Description:</strong>
-                  <p style={{ marginTop: '5px', marginBottom: '5px' }}>{book.description}</p>
-                </div>
-              )}
-              
-              {book.notes && (
-                <div style={{ marginTop: '10px' }}>
-                  <strong>Notes:</strong>
-                  <p style={{ marginTop: '5px', marginBottom: '0' }}>{book.notes}</p>
-                </div>
+              {editing ? (
+                <>
+                  {/* Edit Mode */}
+                  <FormInput
+                    label="Title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    required={true}
+                    maxLength={MAX_LENGTHS.TITLE}
+                    error={formErrors.title}
+                  />
+                  
+                  <FormInput
+                    label="Author"
+                    name="author"
+                    value={formData.author}
+                    onChange={handleInputChange}
+                    required={true}
+                    maxLength={MAX_LENGTHS.AUTHOR}
+                    error={formErrors.author}
+                  />
+                  
+                  <div className="row" style={{ marginBottom: '5px' }}>
+                    <div className="col s12 m6">
+                      <FormInput
+                        label="ISBN"
+                        name="isbn"
+                        value={formData.isbn}
+                        onChange={handleInputChange}
+                        maxLength={MAX_LENGTHS.ISBN}
+                        error={formErrors.isbn}
+                      />
+                    </div>
+                    <div className="col s12 m6">
+                      <FormSelect
+                        label="Ownership Status"
+                        name="ownershipStatus"
+                        value={formData.ownershipStatus}
+                        onChange={handleInputChange}
+                        options={OWNERSHIP_STATUS_OPTIONS}
+                        required={true}
+                        error={formErrors.ownershipStatus}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="row" style={{ marginBottom: '5px' }}>
+                    <div className="col s12 m6">
+                      <FormInput
+                        label="Published Year"
+                        name="publishedYear"
+                        type="number"
+                        value={formData.publishedYear}
+                        onChange={handleInputChange}
+                        error={formErrors.publishedYear}
+                      />
+                    </div>
+                    <div className="col s12 m6">
+                      <FormInput
+                        label="Page Count"
+                        name="pageCount"
+                        type="number"
+                        value={formData.pageCount}
+                        onChange={handleInputChange}
+                        error={formErrors.pageCount}
+                      />
+                    </div>
+                  </div>
+                  
+                  <FormTextarea
+                    label="Description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    maxLength={MAX_LENGTHS.DESCRIPTION}
+                    error={formErrors.description}
+                    rows={3}
+                  />
+                  
+                  <FormTextarea
+                    label="Notes"
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleInputChange}
+                    maxLength={MAX_LENGTHS.NOTES}
+                    error={formErrors.notes}
+                    rows={3}
+                  />
+                  
+                  <div style={{ marginTop: '30px', textAlign: 'right' }}>
+                    <Button
+                      onClick={handleCancel}
+                      variant="text"
+                      disabled={submitting}
+                      style={{ marginRight: '15px' }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSave}
+                      variant="primary"
+                      disabled={submitting}
+                    >
+                      {submitting ? 'Saving...' : 'Save'}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* View Mode */}
+                  <h4 style={{ marginTop: '0', marginBottom: '5px' }}>{book.title}</h4>
+                  <h5 className="grey-text" style={{ marginTop: '0', marginBottom: '10px' }}>{book.author}</h5>
+                  
+                  <div className="row" style={{ marginBottom: '5px' }}>
+                    <div className="col s12 m3">
+                      <strong>ISBN:</strong> {book.isbn || 'N/A'}
+                    </div>
+                    <div className="col s12 m3">
+                      <strong>Published Year:</strong> {book.publishedYear || 'N/A'}
+                    </div>
+                    <div className="col s12 m3">
+                      <strong>Page Count:</strong> {book.pageCount || 'N/A'}
+                    </div>
+                    <div className="col s12 m3">
+                      <strong>Ownership:</strong> {formatOwnershipStatus(book.ownershipStatus)}
+                    </div>
+                  </div>
+                  
+                  {book.description && (
+                    <div style={{ marginTop: '10px' }}>
+                      <strong>Description:</strong>
+                      <p style={{ marginTop: '5px', marginBottom: '5px' }}>{book.description}</p>
+                    </div>
+                  )}
+                  
+                  {book.notes && (
+                    <div style={{ marginTop: '10px' }}>
+                      <strong>Notes:</strong>
+                      <p style={{ marginTop: '5px', marginBottom: '0' }}>{book.notes}</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

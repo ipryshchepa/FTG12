@@ -35,11 +35,72 @@ vi.mock('../components/shared/ErrorMessage', () => ({
 }));
 
 vi.mock('../components/shared/Button', () => ({
-  default: ({ children, onClick, variant }) => (
-    <button onClick={onClick} data-variant={variant}>
+  default: ({ children, onClick, variant, disabled, style }) => (
+    <button onClick={onClick} data-variant={variant} disabled={disabled} style={style}>
       {children}
     </button>
   )
+}));
+
+vi.mock('../components/shared/FormInput', () => ({
+  default: ({ label, name, value, onChange, error, required, maxLength, type }) => (
+    <div data-testid="form-input">
+      <label htmlFor={name}>{label}{required && ' *'}</label>
+      <input
+        id={name}
+        name={name}
+        type={type || 'text'}
+        value={value}
+        onChange={onChange}
+        maxLength={maxLength}
+      />
+      {error && <span data-testid={`error-${name}`}>{error}</span>}
+    </div>
+  )
+}));
+
+vi.mock('../components/shared/FormSelect', () => ({
+  default: ({ label, name, value, onChange, options, error, required }) => (
+    <div data-testid="form-select">
+      <label htmlFor={name}>{label}{required && ' *'}</label>
+      <select
+        id={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+      >
+        <option value="">Choose {label}</option>
+        {options.map(option => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      {error && <span data-testid={`error-${name}`}>{error}</span>}
+    </div>
+  )
+}));
+
+vi.mock('../components/shared/FormTextarea', () => ({
+  default: ({ label, name, value, onChange, error, maxLength }) => (
+    <div data-testid="form-textarea">
+      <label htmlFor={name}>{label}</label>
+      <textarea
+        id={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+        maxLength={maxLength}
+      />
+      {error && <span data-testid={`error-${name}`}>{error}</span>}
+    </div>
+  )
+}));
+
+vi.mock('../hooks/useToast', () => ({
+  useToast: () => ({
+    showToast: vi.fn()
+  })
 }));
 
 describe('BookDetails Page', () => {
@@ -716,5 +777,474 @@ describe('BookDetails Page', () => {
         expect(screen.getByText('Loan Information')).toBeInTheDocument();
       });
     });
+    describe('Edit Mode', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it('should display Edit button when not editing', async () => {
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit')).toBeInTheDocument();
+      });
+    });
+
+    it('should enable edit mode when Edit button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      // Form inputs should be visible
+      expect(screen.getByLabelText('Title *')).toBeInTheDocument();
+      expect(screen.getByLabelText('Author *')).toBeInTheDocument();
+    });
+
+    it('should hide Edit button when in edit mode', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit')).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      // Edit button should be hidden
+      expect(screen.queryByText('Edit')).not.toBeInTheDocument();
+    });
+
+    it('should display all form fields in edit mode', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      // All form fields should be visible
+      expect(screen.getByLabelText('Title *')).toBeInTheDocument();
+      expect(screen.getByLabelText('Author *')).toBeInTheDocument();
+      expect(screen.getByLabelText('Description')).toBeInTheDocument();
+      expect(screen.getByLabelText('Notes')).toBeInTheDocument();
+      expect(screen.getByLabelText('ISBN')).toBeInTheDocument();
+      expect(screen.getByLabelText('Published Year')).toBeInTheDocument();
+      expect(screen.getByLabelText('Page Count')).toBeInTheDocument();
+      expect(screen.getByLabelText('Ownership Status *')).toBeInTheDocument();
+    });
+
+    it('should populate form fields with current book data', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({
+        title: 'Test Book',
+        author: 'Author McAuthorface',
+        description: 'Test Description',
+        notes: 'Test Notes',
+        isbn: '978-1234567890',
+        publishedYear: 2024,
+        pageCount: 350,
+        ownershipStatus: 'Own'
+      });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      // Check all field values
+      expect(screen.getByDisplayValue('Test Book')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Author McAuthorface')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Test Description')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Test Notes')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('978-1234567890')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('2024')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('350')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Own')).toBeInTheDocument();
+    });
+
+    it('should allow typing into all form fields', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const titleInput = screen.getByLabelText('Title *');
+      await user.clear(titleInput);
+      await user.type(titleInput, 'New Title');
+      expect(screen.getByDisplayValue('New Title')).toBeInTheDocument();
+    });
+
+    it('should call updateBook with correct payload when Save is clicked', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+      vi.spyOn(bookService, 'updateBook').mockResolvedValue({});
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const titleInput = screen.getByLabelText('Title *');
+      await user.clear(titleInput);
+      await user.type(titleInput, 'Updated Title');
+
+      const saveButton = screen.getByText('Save');
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(bookService.updateBook).toHaveBeenCalledWith(
+          mockBookId,
+          expect.objectContaining({
+            id: parseInt(mockBookId, 10),
+            title: 'Updated Title',
+            author: mockBook.author
+          })
+        );
+      });
+    });
+
+    it('should show success toast and exit edit mode after successful save', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+      vi.spyOn(bookService, 'updateBook').mockResolvedValue({});
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const saveButton = screen.getByText('Save');
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(screen.queryByLabelText('Title *')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should revert changes when Cancel button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ title: 'Original Title' });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Original Title')).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const titleInput = screen.getByLabelText('Title *');
+      await user.clear(titleInput);
+      await user.type(titleInput, 'Modified Title');
+
+      expect(screen.getByDisplayValue('Modified Title')).toBeInTheDocument();
+
+      const cancelButton = screen.getByText('Cancel');
+      await user.click(cancelButton);
+
+      await waitFor(() => {
+        expect(screen.queryByLabelText('Title *')).not.toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Original Title')).toBeInTheDocument();
+    });
+
+    it('should show validation error when Title is empty', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const titleInput = screen.getByLabelText('Title *');
+      await user.clear(titleInput);
+
+      const saveButton = screen.getByText('Save');
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-title')).toHaveTextContent('Title is required');
+      });
+    });
+
+    it('should show validation error when Author is empty', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const authorInput = screen.getByLabelText('Author *');
+      await user.clear(authorInput);
+
+      const saveButton = screen.getByText('Save');
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('error-author')).toHaveTextContent('Author is required');
+      });
+    });
+
+    it('should prevent save when validation errors exist', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+      vi.spyOn(bookService, 'updateBook').mockResolvedValue({});
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const titleInput = screen.getByLabelText('Title *');
+      await user.clear(titleInput);
+
+      const saveButton = screen.getByText('Save');
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(bookService.updateBook).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should show error toast and stay in edit mode on save failure', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+      vi.spyOn(bookService, 'updateBook').mockRejectedValue(new Error('Network error'));
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const saveButton = screen.getByText('Save');
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(bookService.updateBook).toHaveBeenCalled();
+      });
+
+      expect(screen.getByLabelText('Title *')).toBeInTheDocument();
+    });
+
+    it('should disable Save and Cancel buttons while submitting', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+      vi.spyOn(bookService, 'updateBook').mockImplementation(
+        () => new Promise(() => {})
+      );
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const saveButton = screen.getByText('Save');
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Saving...')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Saving...')).toBeDisabled();
+      expect(screen.getByText('Cancel')).toBeDisabled();
+    });
+
+    it('should not edit Rating, Reading Status, and Loan sections in edit mode', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ 
+        score: 8, 
+        ratingNotes: 'Great!',
+        readingStatus: 'Completed',
+        loanee: 'Jane Doe', 
+        loanDate: '2026-02-15T00:00:00Z' 
+      });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      // These sections should still display as text
+      expect(screen.getByText('★★★★★★★★☆☆')).toBeInTheDocument();
+      expect(screen.getByText('Great!')).toBeInTheDocument();
+      expect(screen.getByText('Completed')).toBeInTheDocument();
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+      expect(screen.getByText(/Feb 15, 2026/)).toBeInTheDocument();
+    });
+
+    it('should include id field in update payload', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+      vi.spyOn(bookService, 'updateBook').mockResolvedValue({});
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      const saveButton = screen.getByText('Save');
+      await user.click(saveButton);
+
+      await waitFor(() => {
+        expect(bookService.updateBook).toHaveBeenCalledWith(
+          mockBookId,
+          expect.objectContaining({
+            id: parseInt(mockBookId, 10)
+          })
+        );
+      });
+    });
   });
+
+});
 });
