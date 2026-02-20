@@ -84,34 +84,40 @@ jobs:
           const marker = '<!-- CI-Coverage-Report: Backend -->';
           const body = `${marker}\n## Backend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
           
-          // Find existing backend coverage comment
-          const { data: comments } = await github.rest.issues.listComments({
+          // Find and delete existing backend coverage comments
+          try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const oldComments = comments.filter(comment => 
+              comment.body && comment.body.includes(marker)
+            );
+            
+            for (const comment of oldComments) {
+              console.log(`Deleting old backend coverage comment ID: ${comment.id}`);
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+              console.log(`Successfully deleted comment ID: ${comment.id}`);
+            }
+          } catch (error) {
+            console.log(`Note: Could not delete old comments: ${error.message}`);
+            console.log('This may be due to permissions or no existing comments.');
+          }
+          
+          // Create new comment
+          await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            issue_number: context.issue.number
+            issue_number: context.issue.number,
+            body: body
           });
-          
-          const existingComment = comments.find(comment => 
-            comment.body && comment.body.includes(marker)
-          );
-          
-          if (existingComment) {
-            // Update existing comment
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: existingComment.id,
-              body: body
-            });
-          } else {
-            // Create new comment
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: body
-            });
-          }
+          console.log('Successfully posted new backend coverage comment');
 
   frontend-test:
     name: Frontend Tests
@@ -178,34 +184,40 @@ jobs:
           const marker = '<!-- CI-Coverage-Report: Frontend -->';
           const body = `${marker}\n## Frontend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
           
-          // Find existing frontend coverage comment
-          const { data: comments } = await github.rest.issues.listComments({
+          // Find and delete existing frontend coverage comments
+          try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const oldComments = comments.filter(comment => 
+              comment.body && comment.body.includes(marker)
+            );
+            
+            for (const comment of oldComments) {
+              console.log(`Deleting old frontend coverage comment ID: ${comment.id}`);
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+              console.log(`Successfully deleted comment ID: ${comment.id}`);
+            }
+          } catch (error) {
+            console.log(`Note: Could not delete old comments: ${error.message}`);
+            console.log('This may be due to permissions or no existing comments.');
+          }
+          
+          // Create new comment
+          await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            issue_number: context.issue.number
+            issue_number: context.issue.number,
+            body: body
           });
-          
-          const existingComment = comments.find(comment => 
-            comment.body && comment.body.includes(marker)
-          );
-          
-          if (existingComment) {
-            // Update existing comment
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: existingComment.id,
-              body: body
-            });
-          } else {
-            // Create new comment
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: body
-            });
-          }
+          console.log('Successfully posted new frontend coverage comment');
 
   docker-build:
     name: Docker Build
