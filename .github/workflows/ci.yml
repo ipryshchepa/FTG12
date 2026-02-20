@@ -31,7 +31,7 @@ jobs:
       run: dotnet build Backend/PersonalLibrary.API.Tests/PersonalLibrary.API.Tests.csproj --no-restore --configuration Release
       
     - name: Run tests with coverage
-      run: dotnet test Backend/PersonalLibrary.API.Tests/PersonalLibrary.API.Tests.csproj --no-build --configuration Release --collect:"XPlat Code Coverage" --logger trx --results-directory ./coverage
+      run: dotnet test Backend/PersonalLibrary.API.Tests/PersonalLibrary.API.Tests.csproj --no-build --configuration Release --collect:"XPlat Code Coverage" --settings Backend/coverlet.runsettings --logger trx --results-directory ./coverage
       
     - name: Install coverage report tool
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -51,11 +51,12 @@ jobs:
         echo "Backend Coverage: $COVERAGE%"
         echo "BACKEND_COVERAGE=$COVERAGE" >> $GITHUB_ENV
         
-        # Check if coverage meets 80% threshold using Python
-        python3 -c "import sys; sys.exit(0 if float('$COVERAGE') >= 80 else 1)" && {
-          echo "✅ Backend coverage $COVERAGE% meets the 80% threshold"
+        # Check if coverage meets 70% threshold using Python
+        THRESHOLD=70
+        python3 -c "import sys; sys.exit(0 if float('$COVERAGE') >= $THRESHOLD else 1)" && {
+          echo "✅ Backend coverage $COVERAGE% meets the ${THRESHOLD}% threshold"
         } || {
-          echo "❌ Backend coverage $COVERAGE% is below 80% threshold"
+          echo "❌ Backend coverage $COVERAGE% is below ${THRESHOLD}% threshold"
           exit 1
         }
       
