@@ -5,11 +5,12 @@ using Microsoft.EntityFrameworkCore;
 using PersonalLibrary.API.Data;
 using PersonalLibrary.API.Filters;
 using PersonalLibrary.API.Services;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+// Add OpenAPI support with Scalar UI
 builder.Services.AddOpenApi();
 
 // Add DbContext with SQL Server (skip in Testing environment - tests will configure InMemory)
@@ -66,10 +67,9 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+// Enable OpenAPI and Scalar UI (works in all environments for local testing)
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 // Comment out HTTPS redirection for Docker - re-enable for production with proper certificates
 // app.UseHttpsRedirection();
