@@ -26,6 +26,11 @@
   background-color: #f5f5f5;
 }
 
+/* Prevent action buttons from wrapping */
+.book-grid table tbody tr td:last-child {
+  white-space: nowrap;
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem 1rem;

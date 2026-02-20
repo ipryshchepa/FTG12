@@ -8,6 +8,7 @@ import AddBookModal from '../components/books/AddBookModal';
 import RateBookModal from '../components/books/RateBookModal';
 import LoanBookModal from '../components/books/LoanBookModal';
 import UpdateReadingStatusModal from '../components/books/UpdateReadingStatusModal';
+import DeleteBookConfirmation from '../components/books/DeleteBookConfirmation';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import ErrorMessage from '../components/shared/ErrorMessage';
 import Button from '../components/shared/Button';
@@ -25,6 +26,7 @@ function Dashboard() {
   const rateModal = useModal();
   const loanModal = useModal();
   const statusModal = useModal();
+  const deleteModal = useModal();
   const { showToast } = useToast();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -140,6 +142,20 @@ function Dashboard() {
     });
   };
 
+  const handleDelete = (book) => {
+    setSelectedBook(book);
+    deleteModal.openModal();
+  };
+
+  const handleDeleteSuccess = () => {
+    fetchBooks({
+      page: currentPage,
+      pageSize,
+      sortBy,
+      sortDirection
+    });
+  };
+
   if (error) {
     return (
       <div className="dashboard-page">
@@ -172,6 +188,7 @@ function Dashboard() {
         onUpdateStatus={handleUpdateStatus}
         onLoan={handleLoan}
         onReturn={handleReturn}
+        onDelete={handleDelete}
         currentPage={currentPage}
         pageSize={pageSize}
         totalCount={totalCount}
@@ -208,6 +225,14 @@ function Dashboard() {
         bookId={selectedBook?.id}
         currentStatus={selectedBook?.readingStatus}
         onSuccess={handleUpdateStatusSuccess}
+      />
+
+      <DeleteBookConfirmation
+        isOpen={deleteModal.isOpen}
+        onClose={deleteModal.closeModal}
+        bookId={selectedBook?.id}
+        bookTitle={selectedBook?.title}
+        onSuccess={handleDeleteSuccess}
       />
     </div>
   );

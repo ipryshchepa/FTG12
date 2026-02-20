@@ -12,6 +12,7 @@ import './BookGrid.css';
  * @param {Function} props.onLoan - Callback when loan button is clicked
  * @param {Function} props.onReturn - Callback when return button is clicked
  * @param {Function} props.onUpdateStatus - Callback when update status button is clicked
+ * @param {Function} props.onDelete - Callback when delete button is clicked
  * @param {number} props.currentPage - Current page number
  * @param {number} props.pageSize - Number of items per page
  * @param {number} props.totalCount - Total number of books
@@ -28,6 +29,7 @@ function BookGrid({
   onLoan,
   onReturn,
   onUpdateStatus,
+  onDelete,
   currentPage,
   pageSize,
   totalCount,
@@ -154,24 +156,32 @@ function BookGrid({
                   >
                     <i className="material-icons">book</i>
                   </button>
-                  <button
-                    className="btn-small waves-effect waves-light"
-                    onClick={() => onLoan && onLoan(book)}
-                    title={book.loanee ? 'Already loaned' : 'Loan this book'}
-                    disabled={!!book.loanee}
-                    style={{ marginRight: '4px' }}
-                  >
-                    <i className="material-icons">person_add</i>
-                  </button>
-                  {book.loanee && (
+                  {book.loanee ? (
                     <button
                       className="btn-small waves-effect waves-light red"
                       onClick={() => onReturn && onReturn(book)}
                       title="Return this book"
+                      style={{ marginRight: '4px' }}
                     >
                       <i className="material-icons">assignment_return</i>
                     </button>
+                  ) : (
+                    <button
+                      className="btn-small waves-effect waves-light"
+                      onClick={() => onLoan && onLoan(book)}
+                      title="Loan this book"
+                      style={{ marginRight: '4px' }}
+                    >
+                      <i className="material-icons">person_add</i>
+                    </button>
                   )}
+                  <button
+                    className="btn-small waves-effect waves-light red darken-2"
+                    onClick={() => onDelete && onDelete(book)}
+                    title="Delete this book"
+                  >
+                    <i className="material-icons">delete</i>
+                  </button>
                 </td>
               </tr>
             ))}

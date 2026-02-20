@@ -17,7 +17,7 @@ vi.mock('react-router-dom', async () => {
 
 // Mock components
 vi.mock('../components/books/BookGrid', () => ({
-  default: ({ books, loading, onTitleClick, onRate, onUpdateStatus, onLoan, onReturn, onPageChange, onSort }) => (
+  default: ({ books, loading, onTitleClick, onRate, onUpdateStatus, onLoan, onReturn, onDelete, onPageChange, onSort }) => (
     <div data-testid="book-grid">
       {loading && <div>Grid Loading...</div>}
       {books.map((book) => (
@@ -27,6 +27,7 @@ vi.mock('../components/books/BookGrid', () => ({
           <button onClick={() => onUpdateStatus(book)} data-testid={`updateStatus-${book.id}`}>Update Status</button>
           <button onClick={() => onLoan(book)} data-testid={`loan-${book.id}`}>Loan</button>
           {book.loanee && <button onClick={() => onReturn(book)} data-testid={`return-${book.id}`}>Return</button>}
+          <button onClick={() => onDelete(book)} data-testid={`delete-${book.id}`}>Delete</button>
         </div>
       ))}
       <button onClick={() => onPageChange(2)}>Next Page</button>
@@ -91,6 +92,22 @@ vi.mock('../components/books/UpdateReadingStatusModal', () => ({
           onSuccess();
           onClose();
         }}>Submit Status</button>
+      </div>
+    ) : null
+  )
+}));
+
+vi.mock('../components/books/DeleteBookConfirmation', () => ({
+  default: ({ isOpen, onClose, bookId, bookTitle, onSuccess }) => (
+    isOpen ? (
+      <div data-testid="delete-book-modal">
+        <p>Delete Book: {bookTitle}</p>
+        <p>Book ID: {bookId}</p>
+        <button onClick={onClose}>Cancel Delete</button>
+        <button onClick={() => {
+          onSuccess();
+          onClose();
+        }}>Confirm Delete</button>
       </div>
     ) : null
   )
@@ -1098,6 +1115,182 @@ describe('Dashboard Page', () => {
 
     const submitButton = screen.getByRole('button', { name: /Submit Status/i });
     await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockFetchBooks).toHaveBeenCalled();
+    });
+  });
+
+  // Delete Book Tests
+  it('should open DeleteBookConfirmation modal when Delete button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const deleteButton = screen.getByTestId('delete-1');
+    await user.click(deleteButton);
+
+    expect(screen.getByTestId('delete-book-modal')).toBeInTheDocument();
+  });
+
+  it('should pass correct book data to DeleteBookConfirmation modal', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book for Deletion',
+        author: 'Author McAuthorface'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const deleteButton = screen.getByTestId('delete-1');
+    await user.click(deleteButton);
+
+    expect(screen.getByText('Delete Book: Test Book for Deletion')).toBeInTheDocument();
+    expect(screen.getByText('Book ID: 1')).toBeInTheDocument();
+  });
+
+  it('should close DeleteBookConfirmation modal when Cancel is clicked', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const deleteButton = screen.getByTestId('delete-1');
+    await user.click(deleteButton);
+
+    expect(screen.getByTestId('delete-book-modal')).toBeInTheDocument();
+
+    const cancelButton = screen.getByRole('button', { name: /Cancel Delete/i });
+    await user.click(cancelButton);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('delete-book-modal')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should close DeleteBookConfirmation modal after successful deletion', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Open modal
+    const deleteButton = screen.getByTestId('delete-1');
+    await user.click(deleteButton);
+
+    expect(screen.getByTestId('delete-book-modal')).toBeInTheDocument();
+
+    // Confirm deletion
+    const confirmButton = screen.getByRole('button', { name: /Confirm Delete/i });
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('delete-book-modal')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should refresh books grid after successful deletion', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    mockFetchBooks.mockClear(); // Clear initial fetch call
+
+    // Open and confirm deletion
+    const deleteButton = screen.getByTestId('delete-1');
+    await user.click(deleteButton);
+
+    const confirmButton = screen.getByRole('button', { name: /Confirm Delete/i });
+    await user.click(confirmButton);
 
     await waitFor(() => {
       expect(mockFetchBooks).toHaveBeenCalled();

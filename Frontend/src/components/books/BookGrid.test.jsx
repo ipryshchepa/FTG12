@@ -44,6 +44,7 @@ describe('BookGrid Component', () => {
     onUpdateStatus: vi.fn(),
     onLoan: vi.fn(),
     onReturn: vi.fn(),
+    onDelete: vi.fn(),
     currentPage: 1,
     pageSize: 10,
     totalCount: 2,
@@ -311,11 +312,11 @@ describe('BookGrid Component', () => {
   });
 
   // Loan and Return button tests
-  it('should render Loan button for all books', () => {
+  it('should render Loan button only for non-loaned books', () => {
     render(<BookGrid {...defaultProps} />);
     
-    const loanButtons = screen.getAllByTitle(/Loan this book|Already loaned/);
-    expect(loanButtons).toHaveLength(2);
+    const loanButtons = screen.getAllByTitle('Loan this book');
+    expect(loanButtons).toHaveLength(1); // Only book 1 is not loaned
   });
 
   it('should enable Loan button when book is not loaned', () => {
@@ -326,11 +327,15 @@ describe('BookGrid Component', () => {
     expect(loanButtons[0]).not.toBeDisabled();
   });
 
-  it('should disable Loan button when book is already loaned', () => {
-    render(<BookGrid {...defaultProps} />);
+  it('should not render Loan button when book is already loaned', () => {
+    const loanedProps = {
+      ...defaultProps,
+      books: [mockBooks[1]] // Book with loanee
+    };
+    render(<BookGrid {...loanedProps} />);
     
-    const disabledLoanButton = screen.getByTitle('Already loaned');
-    expect(disabledLoanButton).toBeDisabled();
+    const loanButtons = screen.queryAllByTitle('Loan this book');
+    expect(loanButtons).toHaveLength(0);
   });
 
   it('should call onLoan with correct book when Loan button is clicked', () => {
@@ -369,19 +374,60 @@ describe('BookGrid Component', () => {
     expect(defaultProps.onReturn).toHaveBeenCalledWith(mockBooks[1]);
   });
 
-  it('should render Rate, Loan, and Return buttons in same row', () => {
+  it('should render Rate and Return buttons for loaned books (no Loan button)', () => {
     render(<BookGrid {...defaultProps} />);
     
     const rows = screen.getAllByRole('row');
     const loanedBookRow = rows[2]; // Second data row (book with loanee)
     
-    // Should have all three buttons visible in this row
+    // Should have Rate and Return buttons, but NO Loan button
     const rateButton = loanedBookRow.querySelector('[title="Rate this book"]');
-    const loanButton = loanedBookRow.querySelector('[title="Already loaned"]');
+    const loanButton = loanedBookRow.querySelector('[title="Loan this book"]');
     const returnButton = loanedBookRow.querySelector('[title="Return this book"]');
     
     expect(rateButton).toBeInTheDocument();
-    expect(loanButton).toBeInTheDocument();
+    expect(loanButton).not.toBeInTheDocument();
     expect(returnButton).toBeInTheDocument();
+  });
+
+  it('should render Rate and Loan buttons for non-loaned books (no Return button)', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const rows = screen.getAllByRole('row');
+    const nonLoanedBookRow = rows[1]; // First data row (book without loanee)
+    
+    // Should have Rate and Loan buttons, but NO Return button
+    const rateButton = nonLoanedBookRow.querySelector('[title="Rate this book"]');
+    const loanButton = nonLoanedBookRow.querySelector('[title="Loan this book"]');
+    const returnButton = nonLoanedBookRow.querySelector('[title="Return this book"]');
+    
+    expect(rateButton).toBeInTheDocument();
+    expect(loanButton).toBeInTheDocument();
+    expect(returnButton).not.toBeInTheDocument();
+  });
+
+  it('should render Delete button for all books', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const deleteButtons = screen.getAllByTitle('Delete this book');
+    expect(deleteButtons).toHaveLength(2); // One for each book
+  });
+
+  it('should call onDelete with correct book when Delete button is clicked', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const deleteButtons = screen.getAllByTitle('Delete this book');
+    fireEvent.click(deleteButtons[0]);
+    
+    expect(defaultProps.onDelete).toHaveBeenCalledWith(mockBooks[0]);
+  });
+
+  it('should not break if onDelete is not provided', () => {
+    const propsWithoutDelete = { ...defaultProps, onDelete: undefined };
+    
+    render(<BookGrid {...propsWithoutDelete} />);
+    
+    const deleteButtons = screen.getAllByTitle('Delete this book');
+    expect(() => fireEvent.click(deleteButtons[0])).not.toThrow();
   });
 });

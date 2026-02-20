@@ -144,6 +144,22 @@ vi.mock('../components/books/UpdateReadingStatusModal', () => ({
   )
 }));
 
+vi.mock('../components/books/DeleteBookConfirmation', () => ({
+  default: ({ isOpen, onClose, bookId, bookTitle, onSuccess }) => (
+    isOpen ? (
+      <div data-testid="delete-book-modal">
+        <p>Delete Book: {bookTitle}</p>
+        <p>Book ID: {bookId}</p>
+        <button onClick={onClose}>Cancel Delete</button>
+        <button onClick={() => {
+          onSuccess();
+          onClose();
+        }}>Confirm Delete</button>
+      </div>
+    ) : null
+  )
+}));
+
 vi.mock('../hooks/useToast', () => ({
   useToast: () => ({
     showToast: vi.fn()
@@ -1658,6 +1674,179 @@ describe('BookDetails Page', () => {
         expect(screen.getByText('★★★★★★★★★☆')).toBeInTheDocument();
         expect(screen.getByText('Excellent!')).toBeInTheDocument();
       });
+    });
+  });
+
+  // Delete Book Tests
+  describe('Delete Book', () => {
+    it('should render Delete button', async () => {
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Delete/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should open DeleteBookConfirmation modal when Delete button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Delete/i })).toBeInTheDocument();
+      });
+
+      const deleteButton = screen.getByRole('button', { name: /Delete/i });
+      await user.click(deleteButton);
+
+      expect(screen.getByTestId('delete-book-modal')).toBeInTheDocument();
+    });
+
+    it('should pass correct book data to DeleteBookConfirmation modal', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ title: 'Book to Delete' });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Delete/i })).toBeInTheDocument();
+      });
+
+      const deleteButton = screen.getByRole('button', { name: /Delete/i });
+      await user.click(deleteButton);
+
+      expect(screen.getByText('Delete Book: Book to Delete')).toBeInTheDocument();
+      expect(screen.getByText(`Book ID: ${mockBookId}`)).toBeInTheDocument();
+    });
+
+    it('should close DeleteBookConfirmation modal when Cancel is clicked', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Delete/i })).toBeInTheDocument();
+      });
+
+      const deleteButton = screen.getByRole('button', { name: /Delete/i });
+      await user.click(deleteButton);
+
+      expect(screen.getByTestId('delete-book-modal')).toBeInTheDocument();
+
+      const cancelButton = screen.getByRole('button', { name: /Cancel Delete/i });
+      await user.click(cancelButton);
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('delete-book-modal')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should navigate to dashboard after successful deletion', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      const mockNavigate = vi.fn();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+      
+      // Mock useNavigate
+      const ReactRouterDom = await import('react-router-dom');
+      vi.spyOn(ReactRouterDom, 'useNavigate').mockReturnValue(mockNavigate);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Delete/i })).toBeInTheDocument();
+      });
+
+      const deleteButton = screen.getByRole('button', { name: /Delete/i });
+      await user.click(deleteButton);
+
+      const confirmButton = screen.getByRole('button', { name: /Confirm Delete/i });
+      await user.click(confirmButton);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/');
+      });
+    });
+
+    it('should not show Delete button when in edit mode', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      // Wait for book content to load
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      // Click Edit button
+      const editButton = screen.getByText('Edit');
+      await user.click(editButton);
+
+      // Delete button should not be visible in edit mode
+      expect(screen.queryByRole('button', { name: /Delete/i })).not.toBeInTheDocument();
+    });
+
+    it('should close modal and not navigate when delete is cancelled', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      const mockNavigate = vi.fn();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+      
+      // Mock useNavigate
+      const ReactRouterDom = await import('react-router-dom');
+      vi.spyOn(ReactRouterDom, 'useNavigate').mockReturnValue(mockNavigate);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Delete/i })).toBeInTheDocument();
+      });
+
+      const deleteButton = screen.getByRole('button', { name: /Delete/i });
+      await user.click(deleteButton);
+
+      const cancelButton = screen.getByRole('button', { name: /Cancel Delete/i });
+      await user.click(cancelButton);
+
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
   });
 

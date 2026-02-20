@@ -12,6 +12,7 @@ import FormTextarea from '../components/shared/FormTextarea';
 import RateBookModal from '../components/books/RateBookModal';
 import LoanBookModal from '../components/books/LoanBookModal';
 import UpdateReadingStatusModal from '../components/books/UpdateReadingStatusModal';
+import DeleteBookConfirmation from '../components/books/DeleteBookConfirmation';
 import { useToast } from '../hooks/useToast';
 import { useModal } from '../hooks/useModal';
 import { validateTitle, validateAuthor, validateYear } from '../utils/validators';
@@ -28,6 +29,7 @@ function BookDetails() {
   const rateModal = useModal();
   const loanModal = useModal();
   const statusModal = useModal();
+  const deleteModal = useModal();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -214,6 +216,14 @@ function BookDetails() {
     }
   };
 
+  const handleDelete = () => {
+    deleteModal.openModal();
+  };
+
+  const handleDeleteSuccess = () => {
+    navigate('/');
+  };
+
   if (loading) {
     return <LoadingSpinner message="Loading book details..." />;
   }
@@ -244,15 +254,26 @@ function BookDetails() {
             Back to Dashboard
           </Button>
           {!editing && (
-            <Button 
-              onClick={handleEdit} 
-              variant="primary" 
-              style={{ marginLeft: '15px' }}
-              disabled={editing}
-            >
-              <i className="material-icons left">edit</i>
-              Edit
-            </Button>
+            <>
+              <Button 
+                onClick={handleEdit} 
+                variant="primary" 
+                style={{ marginLeft: '15px' }}
+                disabled={editing}
+              >
+                <i className="material-icons left">edit</i>
+                Edit
+              </Button>
+              <Button 
+                onClick={handleDelete} 
+                variant="danger" 
+                style={{ marginLeft: '15px' }}
+                icon="delete"
+                title="Delete this book"
+              >
+                Delete
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -539,6 +560,14 @@ function BookDetails() {
         bookId={book?.id}
         currentStatus={book?.readingStatus}
         onSuccess={fetchBookDetails}
+      />
+
+      <DeleteBookConfirmation
+        isOpen={deleteModal.isOpen}
+        onClose={deleteModal.closeModal}
+        bookId={book?.id}
+        bookTitle={book?.title}
+        onSuccess={handleDeleteSuccess}
       />
     </div>
   );
