@@ -61,14 +61,14 @@ jobs:
         }
       
     - name: Upload coverage reports
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: always()
       with:
         name: backend-coverage-report
         path: ./coverage/report/
       
     - name: Upload test results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: always()
       with:
         name: backend-test-results
@@ -168,7 +168,7 @@ jobs:
       working-directory: Frontend
       
     - name: Upload coverage report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       if: always()
       with:
         name: frontend-coverage-report
