@@ -40,6 +40,7 @@ describe('BookGrid Component', () => {
     books: mockBooks,
     loading: false,
     onTitleClick: vi.fn(),
+    onRate: vi.fn(),
     currentPage: 1,
     pageSize: 10,
     totalCount: 2,
@@ -65,6 +66,7 @@ describe('BookGrid Component', () => {
     expect(screen.getByRole('columnheader', { name: /Ownership/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Reading Status/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Loanee/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Actions/i })).toBeInTheDocument();
   });
 
   it('should render title as clickable link', () => {
@@ -238,5 +240,37 @@ describe('BookGrid Component', () => {
     
     const loaneeHeader = screen.getByRole('columnheader', { name: 'Loanee' });
     expect(loaneeHeader).toHaveClass('sortable');
+  });
+
+  it('should render Rate button for each book', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    // Should have 2 Rate buttons (one for each book) - using title attribute
+    const buttons = screen.getAllByTitle('Rate this book');
+    expect(buttons).toHaveLength(2);
+  });
+
+  it('should call onRate with correct book when Rate button is clicked', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const rateButtons = screen.getAllByTitle('Rate this book');
+    fireEvent.click(rateButtons[0]); // Click first Rate button
+    
+    expect(defaultProps.onRate).toHaveBeenCalledWith(mockBooks[0]);
+  });
+
+  it('should call onRate with correct book data', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const rateButtons = screen.getAllByTitle('Rate this book');
+    fireEvent.click(rateButtons[1]); // Click second Rate button
+    
+    expect(defaultProps.onRate).toHaveBeenCalledWith(mockBooks[1]);
+    expect(defaultProps.onRate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: '2',
+        title: 'Test Book 2'
+      })
+    );
   });
 });

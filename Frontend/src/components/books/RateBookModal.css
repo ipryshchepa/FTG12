@@ -1,0 +1,83 @@
+/* Star Rating Styles */
+.star-rating-container {
+  margin-bottom: 1.5rem;
+}
+
+.star-rating-label {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  color: #424242;
+}
+
+.required-asterisk {
+  color: #f44336;
+  margin-left: 2px;
+}
+
+.stars-wrapper {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.star {
+  font-size: 2rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, color 0.1s ease;
+  user-select: none;
+}
+
+.star:hover {
+  transform: scale(1.2);
+}
+
+.star:focus {
+  outline: 2px solid #2196F3;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.star-selected {
+  color: #ffd700;
+}
+
+.star-unselected {
+  color: #e0e0e0;
+}
+
+.score-display {
+  font-size: 1rem;
+  color: #757575;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* Modal Actions */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Responsive styles for mobile */
+@media only screen and (max-width: 600px) {
+  .star {
+    font-size: 1.5rem;
+  }
+
+  .stars-wrapper {
+    gap: 0.15rem;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}

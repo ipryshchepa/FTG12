@@ -320,3 +320,13 @@ Prompt contents that were created after the restructuring are in \Plans\10-front
 Result: 
 
 Copilot updated book details page and added update button that changed the view from read only details to form with the inputs. As it followed closely the layout of the read only details, I didn't have any issues with the page size. Copilot had an issue with the button margins, and the buttons were always touching each other. Text requests to fix that didn't help, copilot made changes that didn't work. Only by providing copilot screenshot with the buttons, it figured out that it had issues with button component styling.
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\11-frontend-rate-book.md
+
+Result:
+
+Copilot added Rate button to a book dashboard and details page. I liked the results and didn't have any issues.

@@ -8,7 +8,9 @@ import Button from '../components/shared/Button';
 import FormInput from '../components/shared/FormInput';
 import FormSelect from '../components/shared/FormSelect';
 import FormTextarea from '../components/shared/FormTextarea';
+import RateBookModal from '../components/books/RateBookModal';
 import { useToast } from '../hooks/useToast';
+import { useModal } from '../hooks/useModal';
 import { validateTitle, validateAuthor, validateYear } from '../utils/validators';
 import { MAX_LENGTHS, OWNERSHIP_STATUS_OPTIONS } from '../constants';
 
@@ -19,6 +21,7 @@ function BookDetails() {
   const { bookId } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const rateModal = useModal();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -167,6 +170,14 @@ function BookDetails() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleRate = () => {
+    rateModal.openModal();
+  };
+
+  const handleRateSuccess = () => {
+    fetchBookDetails(); // Refresh book data to show updated rating
   };
 
   if (loading) {
@@ -372,7 +383,18 @@ function BookDetails() {
         <div className="col s12 m4">
           <div className="card" style={{ height: '100%' }}>
             <div className="card-content">
-              <span className="card-title" style={{ fontSize: '1.2rem', marginBottom: '10px' }}>Rating</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span className="card-title" style={{ fontSize: '1.2rem', margin: '0' }}>Rating</span>
+                <Button
+                  onClick={handleRate}
+                  variant="primary"
+                  size="small"
+                  icon="star"
+                  title={book.score ? 'Update rating' : 'Rate this book'}
+                >
+                  {book.score ? 'Update' : 'Rate'}
+                </Button>
+              </div>
               {book.score ? (
                 <div>
                   <div className="rating-stars" style={{ fontSize: '1.3rem', color: '#ffd700', marginBottom: '5px' }}>
@@ -423,6 +445,14 @@ function BookDetails() {
           </div>
         </div>
       </div>
+
+      <RateBookModal
+        isOpen={rateModal.isOpen}
+        onClose={rateModal.closeModal}
+        bookId={book?.id}
+        existingRating={book?.score ? { score: book.score, notes: book.ratingNotes } : null}
+        onSuccess={handleRateSuccess}
+      />
     </div>
   );
 }

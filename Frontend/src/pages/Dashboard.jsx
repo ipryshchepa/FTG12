@@ -4,6 +4,7 @@ import { useBooks } from '../hooks/useBooks';
 import { useModal } from '../hooks/useModal';
 import BookGrid from '../components/books/BookGrid';
 import AddBookModal from '../components/books/AddBookModal';
+import RateBookModal from '../components/books/RateBookModal';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import ErrorMessage from '../components/shared/ErrorMessage';
 import Button from '../components/shared/Button';
@@ -16,11 +17,13 @@ function Dashboard() {
   const navigate = useNavigate();
   const { books, loading, error, totalCount, fetchBooks } = useBooks();
   const addBookModal = useModal();
+  const rateModal = useModal();
   
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
   const [sortBy, setSortBy] = useState('Title');
   const [sortDirection, setSortDirection] = useState('asc');
+  const [selectedBook, setSelectedBook] = useState(null);
 
   useEffect(() => {
     fetchBooks({
@@ -70,6 +73,20 @@ function Dashboard() {
     });
   };
 
+  const handleRate = (book) => {
+    setSelectedBook(book);
+    rateModal.openModal();
+  };
+
+  const handleRateSuccess = () => {
+    fetchBooks({
+      page: currentPage,
+      pageSize,
+      sortBy,
+      sortDirection
+    });
+  };
+
   if (error) {
     return (
       <div className="dashboard-page">
@@ -98,6 +115,7 @@ function Dashboard() {
         books={books}
         loading={loading}
         onTitleClick={handleTitleClick}
+        onRate={handleRate}
         currentPage={currentPage}
         pageSize={pageSize}
         totalCount={totalCount}
@@ -111,6 +129,14 @@ function Dashboard() {
         isOpen={addBookModal.isOpen}
         onClose={addBookModal.closeModal}
         onSuccess={handleAddBookSuccess}
+      />
+
+      <RateBookModal
+        isOpen={rateModal.isOpen}
+        onClose={rateModal.closeModal}
+        bookId={selectedBook?.id}
+        existingRating={selectedBook?.score ? { score: selectedBook.score, notes: selectedBook.ratingNotes } : null}
+        onSuccess={handleRateSuccess}
       />
     </div>
   );

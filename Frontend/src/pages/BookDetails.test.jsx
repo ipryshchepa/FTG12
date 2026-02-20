@@ -97,6 +97,22 @@ vi.mock('../components/shared/FormTextarea', () => ({
   )
 }));
 
+vi.mock('../components/books/RateBookModal', () => ({
+  default: ({ isOpen, onClose, bookId, existingRating, onSuccess }) => (
+    isOpen ? (
+      <div data-testid="rate-book-modal">
+        <p>Rating Book ID: {bookId}</p>
+        {existingRating && <p>Existing Score: {existingRating.score}</p>}
+        <button onClick={onClose}>Close Rate Modal</button>
+        <button onClick={() => {
+          onSuccess();
+          onClose();
+        }}>Submit Rating</button>
+      </div>
+    ) : null
+  )
+}));
+
 vi.mock('../hooks/useToast', () => ({
   useToast: () => ({
     showToast: vi.fn()
@@ -1242,6 +1258,195 @@ describe('BookDetails Page', () => {
             id: parseInt(mockBookId, 10)
           })
         );
+      });
+    });
+  });
+
+  describe('Rating Functionality', () => {
+    it('should display Rate button in Rating section', async () => {
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      // Find the Update button in the Rating section (when score exists)
+      const rateButtons = screen.getAllByText('Update');
+      expect(rateButtons.length).toBeGreaterThan(0);
+    });
+
+    it('should display "Rate" button when book has no rating', async () => {
+      const mockBook = createMockBook({ score: null, ratingNotes: null });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      expect(screen.getByText('Rate')).toBeInTheDocument();
+    });
+
+    it('should open RateBookModal when Rate button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ score: null, ratingNotes: null });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const rateButton = screen.getByText('Rate');
+      await user.click(rateButton);
+
+      expect(screen.getByTestId('rate-book-modal')).toBeInTheDocument();
+    });
+
+    it('should pass correct bookId to RateBookModal', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const updateButton = screen.getAllByText('Update')[0];
+      await user.click(updateButton);
+
+      expect(screen.getByText(`Rating Book ID: ${mockBook.id}`)).toBeInTheDocument();
+    });
+
+    it('should pass existing rating to RateBookModal when book has rating', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ score: 7, ratingNotes: 'Good book' });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const updateButton = screen.getAllByText('Update')[0];
+      await user.click(updateButton);
+
+      expect(screen.getByText('Existing Score: 7')).toBeInTheDocument();
+    });
+
+    it('should refetch book data after successful rating', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      const getDetailsSpy = vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      // Clear previous calls
+      getDetailsSpy.mockClear();
+
+      const updateButton = screen.getAllByText('Update')[0];
+      await user.click(updateButton);
+
+      const submitButton = screen.getByText('Submit Rating');
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(getDetailsSpy).toHaveBeenCalledWith(mockBookId);
+      });
+    });
+
+    it('should close RateBookModal after successful rating', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const updateButton = screen.getAllByText('Update')[0];
+      await user.click(updateButton);
+
+      expect(screen.getByTestId('rate-book-modal')).toBeInTheDocument();
+
+      const submitButton = screen.getByText('Submit Rating');
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('rate-book-modal')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should display updated rating after successful rating submission', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ score: 7 });
+      const updatedBook = createMockBook({ score: 9, ratingNotes: 'Excellent!' });
+      
+      const getDetailsSpy = vi.spyOn(bookService, 'getBookDetails')
+        .mockResolvedValueOnce(mockBook)
+        .mockResolvedValueOnce(updatedBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(mockBook.title)).toBeInTheDocument();
+      });
+
+      const updateButton = screen.getAllByText('Update')[0];
+      await user.click(updateButton);
+
+      const submitButton = screen.getByText('Submit Rating');
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('★★★★★★★★★☆')).toBeInTheDocument();
+        expect(screen.getByText('Excellent!')).toBeInTheDocument();
       });
     });
   });

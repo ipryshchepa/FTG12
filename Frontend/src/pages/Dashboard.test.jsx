@@ -17,12 +17,13 @@ vi.mock('react-router-dom', async () => {
 
 // Mock components
 vi.mock('../components/books/BookGrid', () => ({
-  default: ({ books, loading, onTitleClick, onPageChange, onSort }) => (
+  default: ({ books, loading, onTitleClick, onRate, onPageChange, onSort }) => (
     <div data-testid="book-grid">
       {loading && <div>Grid Loading...</div>}
       {books.map((book) => (
         <div key={book.id} data-testid={`book-${book.id}`}>
           <button onClick={() => onTitleClick(book.id)}>{book.title}</button>
+          <button onClick={() => onRate(book)} data-testid={`rate-${book.id}`}>Rate</button>
         </div>
       ))}
       <button onClick={() => onPageChange(2)}>Next Page</button>
@@ -40,6 +41,22 @@ vi.mock('../components/books/AddBookModal', () => ({
           onSuccess();
           onClose();
         }}>Submit Book</button>
+      </div>
+    ) : null
+  )
+}));
+
+vi.mock('../components/books/RateBookModal', () => ({
+  default: ({ isOpen, onClose, bookId, existingRating, onSuccess }) => (
+    isOpen ? (
+      <div data-testid="rate-book-modal">
+        <p>Rating Book ID: {bookId}</p>
+        {existingRating && <p>Existing Score: {existingRating.score}</p>}
+        <button onClick={onClose}>Close Rate Modal</button>
+        <button onClick={() => {
+          onSuccess();
+          onClose();
+        }}>Submit Rating</button>
       </div>
     ) : null
   )
@@ -426,6 +443,187 @@ describe('Dashboard Page', () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId('add-book-modal')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should open RateBookModal when Rate button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        score: 8,
+        ratingNotes: 'Great book'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Click Rate button
+    const rateButton = screen.getByTestId('rate-1');
+    await user.click(rateButton);
+
+    expect(screen.getByTestId('rate-book-modal')).toBeInTheDocument();
+  });
+
+  it('should pass correct bookId to RateBookModal', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '123',
+        title: 'Test Book',
+        author: 'Author McAuthorface'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Click Rate button
+    const rateButton = screen.getByTestId('rate-123');
+    await user.click(rateButton);
+
+    expect(screen.getByText('Rating Book ID: 123')).toBeInTheDocument();
+  });
+
+  it('should pass existing rating to RateBookModal when book has rating', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book',
+        author: 'Author McAuthorface',
+        score: 7,
+        ratingNotes: 'Good book'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Click Rate button
+    const rateButton = screen.getByTestId('rate-1');
+    await user.click(rateButton);
+
+    expect(screen.getByText('Existing Score: 7')).toBeInTheDocument();
+  });
+
+  it('should refresh books grid after successful rating', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book',
+        author: 'Author McAuthorface'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Open rate modal
+    const rateButton = screen.getByTestId('rate-1');
+    await user.click(rateButton);
+
+    // Clear previous calls
+    mockFetchBooks.mockClear();
+
+    // Submit rating
+    const submitButton = screen.getByRole('button', { name: /Submit Rating/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockFetchBooks).toHaveBeenCalledWith({
+        page: 1,
+        pageSize: 10,
+        sortBy: 'Title',
+        sortDirection: 'asc'
+      });
+    });
+  });
+
+  it('should close RateBookModal after successful rating', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book',
+        author: 'Author McAuthorface'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Open rate modal
+    const rateButton = screen.getByTestId('rate-1');
+    await user.click(rateButton);
+
+    expect(screen.getByTestId('rate-book-modal')).toBeInTheDocument();
+
+    // Submit rating
+    const submitButton = screen.getByRole('button', { name: /Submit Rating/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('rate-book-modal')).not.toBeInTheDocument();
     });
   });
 });

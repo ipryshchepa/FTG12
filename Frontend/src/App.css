@@ -48,6 +48,17 @@
   margin-bottom: 1.5rem;
 }
 
+/* Star rating styles */
+.star-rating {
+  color: #ffd700;
+  font-size: 1.2em;
+}
+
+/* Rating stars display in details */
+.rating-stars {
+  display: inline-block;
+}
+
 /* Responsive styles */
 @media only screen and (max-width: 600px) {
   .container {
@@ -60,6 +71,11 @@
   
   .grid-actions .btn-small {
     width: 100%;
+  }
+  
+  /* Adjust star rating on mobile */
+  .star-rating {
+    font-size: 1em;
   }
 }
 

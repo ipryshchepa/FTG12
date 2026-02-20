@@ -8,6 +8,7 @@ import './BookGrid.css';
  * @param {Array} props.books - Array of book objects
  * @param {boolean} props.loading - Loading state
  * @param {Function} props.onTitleClick - Callback when book title is clicked
+ * @param {Function} props.onRate - Callback when rate button is clicked
  * @param {number} props.currentPage - Current page number
  * @param {number} props.pageSize - Number of items per page
  * @param {number} props.totalCount - Total number of books
@@ -20,6 +21,7 @@ function BookGrid({
   books,
   loading,
   onTitleClick,
+  onRate,
   currentPage,
   pageSize,
   totalCount,
@@ -104,6 +106,7 @@ function BookGrid({
               {renderTableHeader('Ownership', 'OwnershipStatus')}
               {renderTableHeader('Reading Status', 'ReadingStatus')}
               {renderTableHeader('Loanee', 'Loanee')}
+              {renderTableHeader('Actions', '', false)}
             </tr>
           </thead>
           <tbody>
@@ -128,6 +131,15 @@ function BookGrid({
                 <td>{formatOwnershipStatus(book.ownershipStatus)}</td>
                 <td>{book.readingStatus ? formatReadingStatus(book.readingStatus) : '-'}</td>
                 <td>{book.loanee || '-'}</td>
+                <td>
+                  <button
+                    className="btn-small waves-effect waves-light"
+                    onClick={() => onRate && onRate(book)}
+                    title="Rate this book"
+                  >
+                    <i className="material-icons">star</i>
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
