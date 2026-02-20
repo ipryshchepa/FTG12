@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as bookService from '../services/bookService';
 import * as loanService from '../services/loanService';
@@ -39,7 +39,7 @@ function BookDetails() {
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchBookDetails = async () => {
+  const fetchBookDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -67,11 +67,11 @@ function BookDetails() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookId]);
 
   useEffect(() => {
     fetchBookDetails();
-  }, [bookId]);
+  }, [bookId, fetchBookDetails]);
 
   const handleBack = () => {
     // Navigate back to the page we came from, or dashboard by default
