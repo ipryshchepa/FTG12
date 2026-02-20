@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBooks } from '../hooks/useBooks';
 import { useModal } from '../hooks/useModal';
+import { useToast } from '../hooks/useToast';
 import BookGrid from '../components/books/BookGrid';
 import AddBookModal from '../components/books/AddBookModal';
 import RateBookModal from '../components/books/RateBookModal';
+import LoanBookModal from '../components/books/LoanBookModal';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import ErrorMessage from '../components/shared/ErrorMessage';
 import Button from '../components/shared/Button';
+import * as loanService from '../services/loanService';
 import './Dashboard.css';
 
 /**
@@ -18,6 +21,8 @@ function Dashboard() {
   const { books, loading, error, totalCount, fetchBooks } = useBooks();
   const addBookModal = useModal();
   const rateModal = useModal();
+  const loanModal = useModal();
+  const { showToast } = useToast();
   
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
@@ -87,6 +92,37 @@ function Dashboard() {
     });
   };
 
+  const handleLoan = (book) => {
+    setSelectedBook(book);
+    loanModal.openModal();
+  };
+
+  const handleLoanSuccess = () => {
+    fetchBooks({
+      page: currentPage,
+      pageSize,
+      sortBy,
+      sortDirection
+    });
+  };
+
+  const handleReturn = async (book) => {
+    try {
+      await loanService.returnBook(book.id);
+      showToast(`Book returned from ${book.loanee}`, 'success');
+      fetchBooks({
+        page: currentPage,
+        pageSize,
+        sortBy,
+        sortDirection
+      });
+    } catch (err) {
+      console.error('Error returning book:', err);
+      const errorMessage = err.message || 'Failed to return book. Please try again.';
+      showToast(errorMessage, 'error');
+    }
+  };
+
   if (error) {
     return (
       <div className="dashboard-page">
@@ -116,6 +152,8 @@ function Dashboard() {
         loading={loading}
         onTitleClick={handleTitleClick}
         onRate={handleRate}
+        onLoan={handleLoan}
+        onReturn={handleReturn}
         currentPage={currentPage}
         pageSize={pageSize}
         totalCount={totalCount}
@@ -137,6 +175,13 @@ function Dashboard() {
         bookId={selectedBook?.id}
         existingRating={selectedBook?.score ? { score: selectedBook.score, notes: selectedBook.ratingNotes } : null}
         onSuccess={handleRateSuccess}
+      />
+
+      <LoanBookModal
+        isOpen={loanModal.isOpen}
+        onClose={loanModal.closeModal}
+        bookId={selectedBook?.id}
+        onSuccess={handleLoanSuccess}
       />
     </div>
   );

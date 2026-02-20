@@ -330,3 +330,13 @@ Prompt contents that were created after the restructuring are in \Plans\11-front
 Result:
 
 Copilot added Rate button to a book dashboard and details page. I liked the results and didn't have any issues.
+
+---
+
+Prompt (Agent mode):
+
+Prompt contents that were created after the restructuring are in \Plans\12-frontend-loan-return-book.md
+
+Result:
+
+Copilot added Rate button to a book dashboard and details page. I liked the results and didn't have any issues.

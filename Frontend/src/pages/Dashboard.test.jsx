@@ -17,13 +17,15 @@ vi.mock('react-router-dom', async () => {
 
 // Mock components
 vi.mock('../components/books/BookGrid', () => ({
-  default: ({ books, loading, onTitleClick, onRate, onPageChange, onSort }) => (
+  default: ({ books, loading, onTitleClick, onRate, onLoan, onReturn, onPageChange, onSort }) => (
     <div data-testid="book-grid">
       {loading && <div>Grid Loading...</div>}
       {books.map((book) => (
         <div key={book.id} data-testid={`book-${book.id}`}>
           <button onClick={() => onTitleClick(book.id)}>{book.title}</button>
           <button onClick={() => onRate(book)} data-testid={`rate-${book.id}`}>Rate</button>
+          <button onClick={() => onLoan(book)} data-testid={`loan-${book.id}`}>Loan</button>
+          {book.loanee && <button onClick={() => onReturn(book)} data-testid={`return-${book.id}`}>Return</button>}
         </div>
       ))}
       <button onClick={() => onPageChange(2)}>Next Page</button>
@@ -62,6 +64,21 @@ vi.mock('../components/books/RateBookModal', () => ({
   )
 }));
 
+vi.mock('../components/books/LoanBookModal', () => ({
+  default: ({ isOpen, onClose, bookId, onSuccess }) => (
+    isOpen ? (
+      <div data-testid="loan-book-modal">
+        <p>Loaning Book ID: {bookId}</p>
+        <button onClick={onClose}>Close Loan Modal</button>
+        <button onClick={() => {
+          onSuccess();
+          onClose();
+        }}>Submit Loan</button>
+      </div>
+    ) : null
+  )
+}));
+
 vi.mock('../components/shared/LoadingSpinner', () => ({
   default: () => <div data-testid="loading-spinner">Loading...</div>
 }));
@@ -81,6 +98,20 @@ vi.mock('../components/shared/Button', () => ({
       {children}
     </button>
   )
+}));
+
+// Mock loanService
+const mockReturnBook = vi.fn();
+vi.mock('../services/loanService', () => ({
+  returnBook: () => mockReturnBook()
+}));
+
+// Mock useToast
+const mockShowToast = vi.fn();
+vi.mock('../hooks/useToast', () => ({
+  useToast: () => ({
+    showToast: mockShowToast
+  })
 }));
 
 describe('Dashboard Page', () => {
@@ -624,6 +655,260 @@ describe('Dashboard Page', () => {
 
     await waitFor(() => {
       expect(screen.queryByTestId('rate-book-modal')).not.toBeInTheDocument();
+    });
+  });
+
+  // Loan and Return tests
+  it('should open LoanBookModal when Loan button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        loanee: null
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const loanButton = screen.getByTestId('loan-1');
+    await user.click(loanButton);
+
+    expect(screen.getByTestId('loan-book-modal')).toBeInTheDocument();
+    expect(screen.getByText('Loaning Book ID: 1')).toBeInTheDocument();
+  });
+
+  it('should close LoanBookModal after successful loan', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        loanee: null
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Open loan modal
+    const loanButton = screen.getByTestId('loan-1');
+    await user.click(loanButton);
+
+    expect(screen.getByTestId('loan-book-modal')).toBeInTheDocument();
+
+    // Submit loan
+    const submitButton = screen.getByRole('button', { name: /Submit Loan/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('loan-book-modal')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should refresh books grid after successful loan', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        loanee: null
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    mockFetchBooks.mockClear(); // Clear initial fetch call
+
+    // Open and submit loan
+    const loanButton = screen.getByTestId('loan-1');
+    await user.click(loanButton);
+
+    const submitButton = screen.getByRole('button', { name: /Submit Loan/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockFetchBooks).toHaveBeenCalled();
+    });
+  });
+
+  it('should call returnBook service when Return button is clicked', async () => {
+    const user = userEvent.setup();
+    mockReturnBook.mockResolvedValue();
+
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        loanee: 'Jane Doe'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const returnButton = screen.getByTestId('return-1');
+    await user.click(returnButton);
+
+    await waitFor(() => {
+      expect(mockReturnBook).toHaveBeenCalled();
+    });
+  });
+
+  it('should show success toast after returning book', async () => {
+    const user = userEvent.setup();
+    mockReturnBook.mockResolvedValue();
+
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        loanee: 'Jane Doe'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const returnButton = screen.getByTestId('return-1');
+    await user.click(returnButton);
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith('Book returned from Jane Doe', 'success');
+    });
+  });
+
+  it('should refresh books grid after returning book', async () => {
+    const user = userEvent.setup();
+    mockReturnBook.mockResolvedValue();
+
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        loanee: 'Jane Doe'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    mockFetchBooks.mockClear(); // Clear initial fetch call
+
+    const returnButton = screen.getByTestId('return-1');
+    await user.click(returnButton);
+
+    await waitFor(() => {
+      expect(mockFetchBooks).toHaveBeenCalled();
+    });
+  });
+
+  it('should show error toast when return fails', async () => {
+    const user = userEvent.setup();
+    mockReturnBook.mockRejectedValue(new Error('Network error'));
+
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        loanee: 'Jane Doe'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const returnButton = screen.getByTestId('return-1');
+    await user.click(returnButton);
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith('Network error', 'error');
     });
   });
 });

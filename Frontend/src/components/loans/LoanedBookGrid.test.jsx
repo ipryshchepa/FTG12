@@ -58,7 +58,8 @@ describe('LoanedBookGrid Component', () => {
   const defaultProps = {
     loanedBooks: mockLoanedBooks,
     loading: false,
-    onTitleClick: vi.fn()
+    onTitleClick: vi.fn(),
+    onReturn: vi.fn()
   };
 
   it('should render table with loaned books', () => {
@@ -76,6 +77,7 @@ describe('LoanedBookGrid Component', () => {
     expect(screen.getByRole('columnheader', { name: /Author/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Loanee/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Loan Date/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /Actions/i })).toBeInTheDocument();
   });
 
   it('should render title column as clickable element', () => {
@@ -298,5 +300,52 @@ describe('LoanedBookGrid Component', () => {
     
     const table = container.querySelector('table');
     expect(table).toHaveClass('responsive-table');
+  });
+
+  // Return button tests
+  it('should render Return button for each loaned book', () => {
+    render(<LoanedBookGrid {...defaultProps} />);
+    
+    const returnButtons = screen.getAllByTitle('Return this book');
+    expect(returnButtons).toHaveLength(3); // All books are loaned
+  });
+
+  it('should call onReturn with correct loan when Return button is clicked', () => {
+    const onReturn = vi.fn();
+    render(<LoanedBookGrid {...defaultProps} onReturn={onReturn} />);
+    
+    const returnButtons = screen.getAllByTitle('Return this book');
+    fireEvent.click(returnButtons[0]);
+    
+    // Should call with the first loan (after default sorting by date)
+    expect(onReturn).toHaveBeenCalledWith(expect.objectContaining({
+      id: 2, // Mystery Tales (most recent loan)
+      bookId: 102,
+      borrowedTo: 'John Smith'
+    }));
+  });
+
+  it('should call onReturn with correct loan data', () => {
+    const onReturn = vi.fn();
+    render(<LoanedBookGrid {...defaultProps} onReturn={onReturn} />);
+    
+    const returnButtons = screen.getAllByTitle('Return this book');
+    fireEvent.click(returnButtons[2]); // Click third button
+    
+    expect(onReturn).toHaveBeenCalledWith(expect.objectContaining({
+      id: 1, // The Great Adventure (oldest loan, displayed last)
+      bookId: 101,
+      borrowedTo: 'Jane Doe'
+    }));
+  });
+
+  it('should render Return button in actions column', () => {
+    render(<LoanedBookGrid {...defaultProps} />);
+    
+    const rows = screen.getAllByRole('row');
+    const firstDataRow = rows[1];
+    
+    const returnButton = firstDataRow.querySelector('[title="Return this book"]');
+    expect(returnButton).toBeInTheDocument();
   });
 });

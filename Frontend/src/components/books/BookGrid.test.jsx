@@ -41,6 +41,8 @@ describe('BookGrid Component', () => {
     loading: false,
     onTitleClick: vi.fn(),
     onRate: vi.fn(),
+    onLoan: vi.fn(),
+    onReturn: vi.fn(),
     currentPage: 1,
     pageSize: 10,
     totalCount: 2,
@@ -272,5 +274,80 @@ describe('BookGrid Component', () => {
         title: 'Test Book 2'
       })
     );
+  });
+
+  // Loan and Return button tests
+  it('should render Loan button for all books', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const loanButtons = screen.getAllByTitle(/Loan this book|Already loaned/);
+    expect(loanButtons).toHaveLength(2);
+  });
+
+  it('should enable Loan button when book is not loaned', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const loanButtons = screen.getAllByTitle('Loan this book');
+    expect(loanButtons).toHaveLength(1); // Only book 1 is not loaned
+    expect(loanButtons[0]).not.toBeDisabled();
+  });
+
+  it('should disable Loan button when book is already loaned', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const disabledLoanButton = screen.getByTitle('Already loaned');
+    expect(disabledLoanButton).toBeDisabled();
+  });
+
+  it('should call onLoan with correct book when Loan button is clicked', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const loanButtons = screen.getAllByTitle('Loan this book');
+    fireEvent.click(loanButtons[0]);
+    
+    expect(defaultProps.onLoan).toHaveBeenCalledWith(mockBooks[0]);
+  });
+
+  it('should render Return button only for loaned books', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const returnButtons = screen.getAllByTitle('Return this book');
+    expect(returnButtons).toHaveLength(1); // Only book 2 is loaned
+  });
+
+  it('should not render Return button for non-loaned books', () => {
+    const nonLoanedProps = {
+      ...defaultProps,
+      books: [mockBooks[0]] // Book without loanee
+    };
+    render(<BookGrid {...nonLoanedProps} />);
+    
+    const returnButtons = screen.queryAllByTitle('Return this book');
+    expect(returnButtons).toHaveLength(0);
+  });
+
+  it('should call onReturn with correct book when Return button is clicked', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const returnButton = screen.getByTitle('Return this book');
+    fireEvent.click(returnButton);
+    
+    expect(defaultProps.onReturn).toHaveBeenCalledWith(mockBooks[1]);
+  });
+
+  it('should render Rate, Loan, and Return buttons in same row', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const rows = screen.getAllByRole('row');
+    const loanedBookRow = rows[2]; // Second data row (book with loanee)
+    
+    // Should have all three buttons visible in this row
+    const rateButton = loanedBookRow.querySelector('[title="Rate this book"]');
+    const loanButton = loanedBookRow.querySelector('[title="Already loaned"]');
+    const returnButton = loanedBookRow.querySelector('[title="Return this book"]');
+    
+    expect(rateButton).toBeInTheDocument();
+    expect(loanButton).toBeInTheDocument();
+    expect(returnButton).toBeInTheDocument();
   });
 });

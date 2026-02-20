@@ -9,6 +9,8 @@ import './BookGrid.css';
  * @param {boolean} props.loading - Loading state
  * @param {Function} props.onTitleClick - Callback when book title is clicked
  * @param {Function} props.onRate - Callback when rate button is clicked
+ * @param {Function} props.onLoan - Callback when loan button is clicked
+ * @param {Function} props.onReturn - Callback when return button is clicked
  * @param {number} props.currentPage - Current page number
  * @param {number} props.pageSize - Number of items per page
  * @param {number} props.totalCount - Total number of books
@@ -22,6 +24,8 @@ function BookGrid({
   loading,
   onTitleClick,
   onRate,
+  onLoan,
+  onReturn,
   currentPage,
   pageSize,
   totalCount,
@@ -136,9 +140,28 @@ function BookGrid({
                     className="btn-small waves-effect waves-light"
                     onClick={() => onRate && onRate(book)}
                     title="Rate this book"
+                    style={{ marginRight: '4px' }}
                   >
                     <i className="material-icons">star</i>
                   </button>
+                  <button
+                    className="btn-small waves-effect waves-light"
+                    onClick={() => onLoan && onLoan(book)}
+                    title={book.loanee ? 'Already loaned' : 'Loan this book'}
+                    disabled={!!book.loanee}
+                    style={{ marginRight: '4px' }}
+                  >
+                    <i className="material-icons">person_add</i>
+                  </button>
+                  {book.loanee && (
+                    <button
+                      className="btn-small waves-effect waves-light red"
+                      onClick={() => onReturn && onReturn(book)}
+                      title="Return this book"
+                    >
+                      <i className="material-icons">assignment_return</i>
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

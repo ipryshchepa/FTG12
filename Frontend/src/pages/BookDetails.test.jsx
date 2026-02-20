@@ -113,6 +113,21 @@ vi.mock('../components/books/RateBookModal', () => ({
   )
 }));
 
+vi.mock('../components/books/LoanBookModal', () => ({
+  default: ({ isOpen, onClose, bookId, onSuccess }) => (
+    isOpen ? (
+      <div data-testid="loan-book-modal">
+        <p>Loaning Book ID: {bookId}</p>
+        <button onClick={onClose}>Close Loan Modal</button>
+        <button onClick={() => {
+          onSuccess();
+          onClose();
+        }}>Submit Loan</button>
+      </div>
+    ) : null
+  )
+}));
+
 vi.mock('../hooks/useToast', () => ({
   useToast: () => ({
     showToast: vi.fn()
@@ -1038,8 +1053,10 @@ describe('BookDetails Page', () => {
 
       expect(screen.getByDisplayValue('Modified Title')).toBeInTheDocument();
 
-      const cancelButton = screen.getByText('Cancel');
-      await user.click(cancelButton);
+      // Get all Cancel buttons and click the one that's NOT disabled (the form Cancel button)
+      const cancelButtons = screen.getAllByText('Cancel');
+      const formCancelButton = cancelButtons.find(btn => !btn.disabled);
+      await user.click(formCancelButton);
 
       await waitFor(() => {
         expect(screen.queryByLabelText('Title *')).not.toBeInTheDocument();
@@ -1194,7 +1211,11 @@ describe('BookDetails Page', () => {
       });
 
       expect(screen.getByText('Saving...')).toBeDisabled();
-      expect(screen.getByText('Cancel')).toBeDisabled();
+      
+      // Get all Cancel buttons and verify the form Cancel button is disabled
+      const cancelButtons = screen.getAllByText('Cancel');
+      const formCancelButton = cancelButtons[0]; // The edit form Cancel button
+      expect(formCancelButton).toBeDisabled();
     });
 
     it('should not edit Rating, Reading Status, and Loan sections in edit mode', async () => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as bookService from '../services/bookService';
+import * as loanService from '../services/loanService';
 import { formatOwnershipStatus, formatReadingStatus, formatStarRating, formatDate } from '../utils/formatters';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import ErrorMessage from '../components/shared/ErrorMessage';
@@ -9,6 +10,7 @@ import FormInput from '../components/shared/FormInput';
 import FormSelect from '../components/shared/FormSelect';
 import FormTextarea from '../components/shared/FormTextarea';
 import RateBookModal from '../components/books/RateBookModal';
+import LoanBookModal from '../components/books/LoanBookModal';
 import { useToast } from '../hooks/useToast';
 import { useModal } from '../hooks/useModal';
 import { validateTitle, validateAuthor, validateYear } from '../utils/validators';
@@ -22,6 +24,7 @@ function BookDetails() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const rateModal = useModal();
+  const loanModal = useModal();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -178,6 +181,26 @@ function BookDetails() {
 
   const handleRateSuccess = () => {
     fetchBookDetails(); // Refresh book data to show updated rating
+  };
+
+  const handleLoan = () => {
+    loanModal.openModal();
+  };
+
+  const handleLoanSuccess = () => {
+    fetchBookDetails(); // Refresh book data to show loan information
+  };
+
+  const handleReturn = async () => {
+    try {
+      await loanService.returnBook(bookId);
+      showToast(`Book returned from ${book.loanee}`, 'success');
+      fetchBookDetails(); // Refresh book data
+    } catch (err) {
+      console.error('Error returning book:', err);
+      const errorMessage = err.message || 'Failed to return book. Please try again.';
+      showToast(errorMessage, 'error');
+    }
   };
 
   if (loading) {
@@ -432,7 +455,26 @@ function BookDetails() {
         <div className="col s12 m4">
           <div className="card" style={{ height: '100%' }}>
             <div className="card-content">
-              <span className="card-title" style={{ fontSize: '1.2rem', marginBottom: '10px' }}>Loan Information</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span className="card-title" style={{ fontSize: '1.2rem', margin: '0' }}>Loan Information</span>
+                {book.loanee ? (
+                  <button
+                    className="btn-small waves-effect waves-light blue"
+                    onClick={handleReturn}
+                    title="Return this book"
+                  >
+                    <i className="material-icons">assignment_return</i>
+                  </button>
+                ) : (
+                  <button
+                    className="btn-small waves-effect waves-light blue"
+                    onClick={handleLoan}
+                    title="Loan this book"
+                  >
+                    <i className="material-icons">person_add</i>
+                  </button>
+                )}
+              </div>
               {book.loanee ? (
                 <div>
                   <p style={{ marginBottom: '5px' }}><strong>Loaned to:</strong> {book.loanee}</p>
@@ -452,6 +494,13 @@ function BookDetails() {
         bookId={book?.id}
         existingRating={book?.score ? { score: book.score, notes: book.ratingNotes } : null}
         onSuccess={handleRateSuccess}
+      />
+
+      <LoanBookModal
+        isOpen={loanModal.isOpen}
+        onClose={loanModal.closeModal}
+        bookId={book?.id}
+        onSuccess={handleLoanSuccess}
       />
     </div>
   );

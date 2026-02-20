@@ -9,8 +9,9 @@ import './LoanedBookGrid.css';
  * @param {Array} props.loanedBooks - Array of loan objects with book details
  * @param {boolean} props.loading - Loading state
  * @param {Function} props.onTitleClick - Callback when book title is clicked
+ * @param {Function} props.onReturn - Callback when return button is clicked
  */
-function LoanedBookGrid({ loanedBooks, loading, onTitleClick }) {
+function LoanedBookGrid({ loanedBooks, loading, onTitleClick, onReturn }) {
   const [sortColumn, setSortColumn] = useState(null);
   const [sortDirection, setSortDirection] = useState('asc');
 
@@ -108,6 +109,7 @@ function LoanedBookGrid({ loanedBooks, loading, onTitleClick }) {
               {renderSortableHeader('Author', 'author')}
               {renderSortableHeader('Loanee', 'loanee')}
               <th>Loan Date</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -130,6 +132,15 @@ function LoanedBookGrid({ loanedBooks, loading, onTitleClick }) {
                 <td>{loan.book?.author || '-'}</td>
                 <td>{loan.borrowedTo || '-'}</td>
                 <td>{formatDate(loan.loanDate)}</td>
+                <td>
+                  <button
+                    className="btn-small waves-effect waves-light red"
+                    onClick={() => onReturn && onReturn(loan)}
+                    title="Return this book"
+                  >
+                    <i className="material-icons">assignment_return</i>
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

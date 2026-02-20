@@ -68,6 +68,19 @@ function LoanedBooks() {
     navigate(`/books/${bookId}`);
   };
 
+  const handleReturn = async (loan) => {
+    try {
+      await loanService.returnBook(loan.bookId);
+      showToast('Book returned', 'success');
+      // Refresh the loaned books list
+      fetchLoanedBooks();
+    } catch (err) {
+      console.error('Error returning book:', err);
+      const errorMessage = err.message || 'Failed to return book. Please try again.';
+      showToast(errorMessage, 'error');
+    }
+  };
+
   const handleRetry = () => {
     fetchLoanedBooks();
   };
@@ -90,6 +103,7 @@ function LoanedBooks() {
           loanedBooks={loanedBooks}
           loading={loading}
           onTitleClick={handleTitleClick}
+          onReturn={handleReturn}
         />
       )}
     </div>

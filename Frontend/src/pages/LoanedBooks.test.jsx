@@ -17,7 +17,7 @@ vi.mock('react-router-dom', async () => {
 
 // Mock LoanedBookGrid
 vi.mock('../components/loans/LoanedBookGrid', () => ({
-  default: ({ loanedBooks, loading, onTitleClick }) => (
+  default: ({ loanedBooks, loading, onTitleClick, onReturn }) => (
     <div data-testid="loaned-book-grid">
       {loading && <div>Grid Loading...</div>}
       {loanedBooks.map((loan) => (
@@ -26,6 +26,7 @@ vi.mock('../components/loans/LoanedBookGrid', () => ({
             {loan.book?.title || 'Unknown'}
           </button>
           <span>{loan.borrowedTo}</span>
+          <button onClick={() => onReturn(loan)} data-testid={`return-${loan.id}`}>Return</button>
         </div>
       ))}
     </div>
@@ -43,9 +44,10 @@ vi.mock('../components/shared/ErrorMessage', () => ({
 }));
 
 // Mock useToast
+const mockShowToast = vi.fn();
 vi.mock('../hooks/useToast', () => ({
   useToast: () => ({
-    showToast: vi.fn()
+    showToast: mockShowToast
   })
 }));
 
@@ -306,5 +308,120 @@ describe('LoanedBooks Page', () => {
     // Should not show loading or error
     expect(screen.queryByText('Grid Loading...')).not.toBeInTheDocument();
     expect(screen.queryByTestId('error-message')).not.toBeInTheDocument();
+  });
+
+  // Return book tests
+  it('should call returnBook service when Return button is clicked', async () => {
+    vi.spyOn(loanService, 'getActiveLoanedBooks')
+      .mockResolvedValueOnce(mockLoans)
+      .mockResolvedValueOnce([]); // After return, no loans
+    
+    const returnBookSpy = vi.spyOn(loanService, 'returnBook').mockResolvedValue();
+    
+    vi.spyOn(bookService, 'getBookDetails').mockImplementation((id) => 
+      Promise.resolve(mockBookDetails[id])
+    );
+
+    render(
+      <BrowserRouter>
+        <LoanedBooks />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('The Great Adventure')).toBeInTheDocument();
+    });
+
+    const returnButton = screen.getByTestId('return-1');
+    fireEvent.click(returnButton);
+
+    await waitFor(() => {
+      expect(returnBookSpy).toHaveBeenCalledWith(101);
+    });
+  });
+
+  it('should show success toast after returning book', async () => {
+    vi.spyOn(loanService, 'getActiveLoanedBooks')
+      .mockResolvedValueOnce(mockLoans)
+      .mockResolvedValueOnce([]);
+    
+    vi.spyOn(loanService, 'returnBook').mockResolvedValue();
+    
+    vi.spyOn(bookService, 'getBookDetails').mockImplementation((id) => 
+      Promise.resolve(mockBookDetails[id])
+    );
+
+    render(
+      <BrowserRouter>
+        <LoanedBooks />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('The Great Adventure')).toBeInTheDocument();
+    });
+
+    const returnButton = screen.getByTestId('return-1');
+    fireEvent.click(returnButton);
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith('Book returned', 'success');
+    });
+  });
+
+  it('should refresh loaned books list after returning book', async () => {
+    const getActiveLoanedBooksSpy = vi.spyOn(loanService, 'getActiveLoanedBooks')
+      .mockResolvedValueOnce(mockLoans)
+      .mockResolvedValueOnce([mockLoans[1]]); // Only second book remains
+    
+    vi.spyOn(loanService, 'returnBook').mockResolvedValue();
+    
+    vi.spyOn(bookService, 'getBookDetails').mockImplementation((id) => 
+      Promise.resolve(mockBookDetails[id])
+    );
+
+    render(
+      <BrowserRouter>
+        <LoanedBooks />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('The Great Adventure')).toBeInTheDocument();
+    });
+
+    const returnButton = screen.getByTestId('return-1');
+    fireEvent.click(returnButton);
+
+    await waitFor(() => {
+      expect(getActiveLoanedBooksSpy).toHaveBeenCalledTimes(2); // Initial + after return
+    });
+  });
+
+  it('should show error toast when return fails', async () => {
+    vi.spyOn(loanService, 'getActiveLoanedBooks').mockResolvedValue(mockLoans);
+    
+    vi.spyOn(loanService, 'returnBook').mockRejectedValue(new Error('Network error'));
+    
+    vi.spyOn(bookService, 'getBookDetails').mockImplementation((id) => 
+      Promise.resolve(mockBookDetails[id])
+    );
+
+    render(
+      <BrowserRouter>
+        <LoanedBooks />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('The Great Adventure')).toBeInTheDocument();
+    });
+
+    const returnButton = screen.getByTestId('return-1');
+    fireEvent.click(returnButton);
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith('Network error', 'error');
+    });
   });
 });
