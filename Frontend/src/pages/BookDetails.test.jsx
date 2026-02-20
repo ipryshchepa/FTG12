@@ -128,6 +128,22 @@ vi.mock('../components/books/LoanBookModal', () => ({
   )
 }));
 
+vi.mock('../components/books/UpdateReadingStatusModal', () => ({
+  default: ({ isOpen, onClose, bookId, currentStatus, onSuccess }) => (
+    isOpen ? (
+      <div data-testid="update-status-modal">
+        <p>Updating Status for Book ID: {bookId}</p>
+        <p>Current Status: {currentStatus || 'None'}</p>
+        <button onClick={onClose}>Close Status Modal</button>
+        <button onClick={() => {
+          onSuccess();
+          onClose();
+        }}>Submit Status</button>
+      </div>
+    ) : null
+  )
+}));
+
 vi.mock('../hooks/useToast', () => ({
   useToast: () => ({
     showToast: vi.fn()
@@ -610,6 +626,143 @@ describe('BookDetails Page', () => {
 
       await waitFor(() => {
         expect(screen.getByText('No reading status set')).toBeInTheDocument();
+      });
+    });
+
+    it('should have Update Status button in Reading Status section', async () => {
+      const mockBook = createMockBook({ readingStatus: 'Completed' });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        const updateButton = screen.getByTitle('Update reading status');
+        expect(updateButton).toBeInTheDocument();
+      });
+    });
+
+    it('should open UpdateReadingStatusModal when Update Status button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ readingStatus: 'Backlog' });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Update reading status')).toBeInTheDocument();
+      });
+
+      const updateButton = screen.getByTitle('Update reading status');
+      await user.click(updateButton);
+
+      expect(screen.getByTestId('update-status-modal')).toBeInTheDocument();
+      expect(screen.getByText(/Updating Status for Book ID:/)).toBeInTheDocument();
+      expect(screen.getByText('Current Status: Backlog')).toBeInTheDocument();
+    });
+
+    it('should pass current status to UpdateReadingStatusModal', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ readingStatus: 'Completed' });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Update reading status')).toBeInTheDocument();
+      });
+
+      const updateButton = screen.getByTitle('Update reading status');
+      await user.click(updateButton);
+
+      expect(screen.getByText('Current Status: Completed')).toBeInTheDocument();
+    });
+
+    it('should pass None for books without reading status', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ readingStatus: null });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Update reading status')).toBeInTheDocument();
+      });
+
+      const updateButton = screen.getByTitle('Update reading status');
+      await user.click(updateButton);
+
+      expect(screen.getByText('Current Status: None')).toBeInTheDocument();
+    });
+
+    it('should refetch book details after successful status update', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ readingStatus: 'Backlog' });
+      const getBookDetailsSpy = vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Update reading status')).toBeInTheDocument();
+      });
+
+      getBookDetailsSpy.mockClear(); // Clear initial fetch
+
+      const updateButton = screen.getByTitle('Update reading status');
+      await user.click(updateButton);
+
+      const submitButton = screen.getByRole('button', { name: /Submit Status/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(getBookDetailsSpy).toHaveBeenCalled();
+      });
+    });
+
+    it('should close modal after successful status update', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook({ readingStatus: 'Completed' });
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTitle('Update reading status')).toBeInTheDocument();
+      });
+
+      const updateButton = screen.getByTitle('Update reading status');
+      await user.click(updateButton);
+
+      expect(screen.getByTestId('update-status-modal')).toBeInTheDocument();
+
+      const submitButton = screen.getByRole('button', { name: /Submit Status/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(screen.queryByTestId('update-status-modal')).not.toBeInTheDocument();
       });
     });
   });

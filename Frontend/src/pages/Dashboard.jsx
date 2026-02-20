@@ -7,6 +7,7 @@ import BookGrid from '../components/books/BookGrid';
 import AddBookModal from '../components/books/AddBookModal';
 import RateBookModal from '../components/books/RateBookModal';
 import LoanBookModal from '../components/books/LoanBookModal';
+import UpdateReadingStatusModal from '../components/books/UpdateReadingStatusModal';
 import LoadingSpinner from '../components/shared/LoadingSpinner';
 import ErrorMessage from '../components/shared/ErrorMessage';
 import Button from '../components/shared/Button';
@@ -23,6 +24,7 @@ function Dashboard() {
   const addBookModal = useModal();
   const rateModal = useModal();
   const loanModal = useModal();
+  const statusModal = useModal();
   const { showToast } = useToast();
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -124,6 +126,20 @@ function Dashboard() {
     }
   };
 
+  const handleUpdateStatus = (book) => {
+    setSelectedBook(book);
+    statusModal.openModal();
+  };
+
+  const handleUpdateStatusSuccess = () => {
+    fetchBooks({
+      page: currentPage,
+      pageSize,
+      sortBy,
+      sortDirection
+    });
+  };
+
   if (error) {
     return (
       <div className="dashboard-page">
@@ -153,6 +169,7 @@ function Dashboard() {
         loading={loading}
         onTitleClick={handleTitleClick}
         onRate={handleRate}
+        onUpdateStatus={handleUpdateStatus}
         onLoan={handleLoan}
         onReturn={handleReturn}
         currentPage={currentPage}
@@ -183,6 +200,14 @@ function Dashboard() {
         onClose={loanModal.closeModal}
         bookId={selectedBook?.id}
         onSuccess={handleLoanSuccess}
+      />
+
+      <UpdateReadingStatusModal
+        isOpen={statusModal.isOpen}
+        onClose={statusModal.closeModal}
+        bookId={selectedBook?.id}
+        currentStatus={selectedBook?.readingStatus}
+        onSuccess={handleUpdateStatusSuccess}
       />
     </div>
   );

@@ -41,6 +41,7 @@ describe('BookGrid Component', () => {
     loading: false,
     onTitleClick: vi.fn(),
     onRate: vi.fn(),
+    onUpdateStatus: vi.fn(),
     onLoan: vi.fn(),
     onReturn: vi.fn(),
     currentPage: 1,
@@ -272,6 +273,39 @@ describe('BookGrid Component', () => {
       expect.objectContaining({
         id: '2',
         title: 'Test Book 2'
+      })
+    );
+  });
+
+  // Update Status button tests
+  it('should render Update Status button for each book', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const buttons = screen.getAllByTitle('Update reading status');
+    expect(buttons).toHaveLength(2);
+  });
+
+  it('should call onUpdateStatus with correct book when Update Status button is clicked', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const updateButtons = screen.getAllByTitle('Update reading status');
+    fireEvent.click(updateButtons[0]);
+    
+    expect(defaultProps.onUpdateStatus).toHaveBeenCalledWith(mockBooks[0]);
+  });
+
+  it('should call onUpdateStatus with correct book data', () => {
+    render(<BookGrid {...defaultProps} />);
+    
+    const updateButtons = screen.getAllByTitle('Update reading status');
+    fireEvent.click(updateButtons[1]);
+    
+    expect(defaultProps.onUpdateStatus).toHaveBeenCalledWith(mockBooks[1]);
+    expect(defaultProps.onUpdateStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: '2',
+        title: 'Test Book 2',
+        readingStatus: null
       })
     );
   });

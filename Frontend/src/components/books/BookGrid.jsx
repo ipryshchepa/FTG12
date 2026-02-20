@@ -11,6 +11,7 @@ import './BookGrid.css';
  * @param {Function} props.onRate - Callback when rate button is clicked
  * @param {Function} props.onLoan - Callback when loan button is clicked
  * @param {Function} props.onReturn - Callback when return button is clicked
+ * @param {Function} props.onUpdateStatus - Callback when update status button is clicked
  * @param {number} props.currentPage - Current page number
  * @param {number} props.pageSize - Number of items per page
  * @param {number} props.totalCount - Total number of books
@@ -26,6 +27,7 @@ function BookGrid({
   onRate,
   onLoan,
   onReturn,
+  onUpdateStatus,
   currentPage,
   pageSize,
   totalCount,
@@ -143,6 +145,14 @@ function BookGrid({
                     style={{ marginRight: '4px' }}
                   >
                     <i className="material-icons">star</i>
+                  </button>
+                  <button
+                    className="btn-small waves-effect waves-light"
+                    onClick={() => onUpdateStatus && onUpdateStatus(book)}
+                    title="Update reading status"
+                    style={{ marginRight: '4px' }}
+                  >
+                    <i className="material-icons">book</i>
                   </button>
                   <button
                     className="btn-small waves-effect waves-light"

@@ -38,6 +38,14 @@ function FormSelect({
     }
   }, [options]);
 
+  useEffect(() => {
+    // Reinitialize when value changes to update Materialize display
+    if (instanceRef.current && selectRef.current) {
+      instanceRef.current.destroy();
+      instanceRef.current = M.FormSelect.init(selectRef.current);
+    }
+  }, [value]);
+
   return (
     <div className="input-field">
       <select

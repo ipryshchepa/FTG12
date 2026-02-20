@@ -17,13 +17,14 @@ vi.mock('react-router-dom', async () => {
 
 // Mock components
 vi.mock('../components/books/BookGrid', () => ({
-  default: ({ books, loading, onTitleClick, onRate, onLoan, onReturn, onPageChange, onSort }) => (
+  default: ({ books, loading, onTitleClick, onRate, onUpdateStatus, onLoan, onReturn, onPageChange, onSort }) => (
     <div data-testid="book-grid">
       {loading && <div>Grid Loading...</div>}
       {books.map((book) => (
         <div key={book.id} data-testid={`book-${book.id}`}>
           <button onClick={() => onTitleClick(book.id)}>{book.title}</button>
           <button onClick={() => onRate(book)} data-testid={`rate-${book.id}`}>Rate</button>
+          <button onClick={() => onUpdateStatus(book)} data-testid={`updateStatus-${book.id}`}>Update Status</button>
           <button onClick={() => onLoan(book)} data-testid={`loan-${book.id}`}>Loan</button>
           {book.loanee && <button onClick={() => onReturn(book)} data-testid={`return-${book.id}`}>Return</button>}
         </div>
@@ -74,6 +75,22 @@ vi.mock('../components/books/LoanBookModal', () => ({
           onSuccess();
           onClose();
         }}>Submit Loan</button>
+      </div>
+    ) : null
+  )
+}));
+
+vi.mock('../components/books/UpdateReadingStatusModal', () => ({
+  default: ({ isOpen, onClose, bookId, currentStatus, onSuccess }) => (
+    isOpen ? (
+      <div data-testid="update-status-modal">
+        <p>Updating Status for Book ID: {bookId}</p>
+        <p>Current Status: {currentStatus || 'None'}</p>
+        <button onClick={onClose}>Close Status Modal</button>
+        <button onClick={() => {
+          onSuccess();
+          onClose();
+        }}>Submit Status</button>
       </div>
     ) : null
   )
@@ -909,6 +926,181 @@ describe('Dashboard Page', () => {
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith('Network error', 'error');
+    });
+  });
+
+  // Update Reading Status tests
+  it('should open UpdateReadingStatusModal when Update Status button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        readingStatus: 'Completed'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const updateStatusButton = screen.getByTestId('updateStatus-1');
+    await user.click(updateStatusButton);
+
+    expect(screen.getByTestId('update-status-modal')).toBeInTheDocument();
+    expect(screen.getByText('Updating Status for Book ID: 1')).toBeInTheDocument();
+    expect(screen.getByText('Current Status: Completed')).toBeInTheDocument();
+  });
+
+  it('should pass correct book data to UpdateReadingStatusModal', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        readingStatus: 'Backlog'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const updateStatusButton = screen.getByTestId('updateStatus-1');
+    await user.click(updateStatusButton);
+
+    expect(screen.getByText('Current Status: Backlog')).toBeInTheDocument();
+  });
+
+  it('should show None for books without reading status', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        readingStatus: null
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    const updateStatusButton = screen.getByTestId('updateStatus-1');
+    await user.click(updateStatusButton);
+
+    expect(screen.getByText('Current Status: None')).toBeInTheDocument();
+  });
+
+  it('should close UpdateReadingStatusModal after successful status update', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        readingStatus: 'Backlog'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    // Open modal
+    const updateStatusButton = screen.getByTestId('updateStatus-1');
+    await user.click(updateStatusButton);
+
+    expect(screen.getByTestId('update-status-modal')).toBeInTheDocument();
+
+    // Submit status update
+    const submitButton = screen.getByRole('button', { name: /Submit Status/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('update-status-modal')).not.toBeInTheDocument();
+    });
+  });
+
+  it('should refresh books grid after successful status update', async () => {
+    const user = userEvent.setup();
+    const mockBooks = [
+      {
+        id: '1',
+        title: 'Test Book 1',
+        author: 'Author McAuthorface',
+        readingStatus: 'Completed'
+      }
+    ];
+
+    vi.spyOn(booksHook, 'useBooks').mockReturnValue({
+      books: mockBooks,
+      loading: false,
+      error: null,
+      totalCount: 1,
+      fetchBooks: mockFetchBooks
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>
+    );
+
+    mockFetchBooks.mockClear(); // Clear initial fetch call
+
+    // Open and submit status update
+    const updateStatusButton = screen.getByTestId('updateStatus-1');
+    await user.click(updateStatusButton);
+
+    const submitButton = screen.getByRole('button', { name: /Submit Status/i });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockFetchBooks).toHaveBeenCalled();
     });
   });
 });

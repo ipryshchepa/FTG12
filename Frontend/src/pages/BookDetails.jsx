@@ -11,6 +11,7 @@ import FormSelect from '../components/shared/FormSelect';
 import FormTextarea from '../components/shared/FormTextarea';
 import RateBookModal from '../components/books/RateBookModal';
 import LoanBookModal from '../components/books/LoanBookModal';
+import UpdateReadingStatusModal from '../components/books/UpdateReadingStatusModal';
 import { useToast } from '../hooks/useToast';
 import { useModal } from '../hooks/useModal';
 import { validateTitle, validateAuthor, validateYear } from '../utils/validators';
@@ -26,6 +27,7 @@ function BookDetails() {
   const { showToast } = useToast();
   const rateModal = useModal();
   const loanModal = useModal();
+  const statusModal = useModal();
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -450,7 +452,16 @@ function BookDetails() {
         <div className="col s12 m4">
           <div className="card" style={{ height: '100%' }}>
             <div className="card-content">
-              <span className="card-title" style={{ fontSize: '1.2rem', marginBottom: '10px' }}>Reading Status</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <span className="card-title" style={{ fontSize: '1.2rem', margin: '0' }}>Reading Status</span>
+                <button
+                  className="btn-small waves-effect waves-light blue"
+                  onClick={statusModal.openModal}
+                  title="Update reading status"
+                >
+                  <i className="material-icons">book</i>
+                </button>
+              </div>
               {book.readingStatus ? (
                 <p style={{ marginBottom: '0', fontSize: '1.1rem' }}>{formatReadingStatus(book.readingStatus)}</p>
               ) : (
@@ -510,6 +521,14 @@ function BookDetails() {
         onClose={loanModal.closeModal}
         bookId={book?.id}
         onSuccess={handleLoanSuccess}
+      />
+
+      <UpdateReadingStatusModal
+        isOpen={statusModal.isOpen}
+        onClose={statusModal.closeModal}
+        bookId={book?.id}
+        currentStatus={book?.readingStatus}
+        onSuccess={fetchBookDetails}
       />
     </div>
   );
