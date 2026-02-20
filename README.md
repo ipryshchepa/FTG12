@@ -1,5 +1,8 @@
 # Personal Library Application
 
+![CI Pipeline](https://github.com/{owner}/{repo}/workflows/CI%20Pipeline/badge.svg)
+![CodeQL](https://github.com/{owner}/{repo}/workflows/CodeQL%20Security%20Scan/badge.svg)
+
 A full-stack personal library management application built with modern technologies.
 
 ## Tech Stack
@@ -106,6 +109,58 @@ cd Backend/PersonalLibrary.API
 dotnet ef migrations add InitialCreate
 dotnet ef database update
 ```
+
+## Testing
+
+### Backend Tests
+```bash
+cd Backend/PersonalLibrary.API.Tests
+dotnet test
+```
+
+Current status: 143/143 tests passing
+
+### Frontend Tests
+```bash
+cd Frontend
+npm test              # Run tests once
+npm run test:watch    # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
+```
+
+Current status: 414/414 tests passing with 96%+ coverage
+
+## CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration and deployment:
+
+- **CI Pipeline** (`ci.yml`): Runs on every push and pull request
+  - Backend tests (143 tests) with coverage enforcement (≥80%)
+  - Frontend tests (414 tests) with linting and coverage enforcement (≥80%)
+  - Docker image builds
+  - Automated coverage reports as downloadable artifacts
+  - PR comments showing coverage results
+
+- **CodeQL Security Scan** (`codeql.yml`): Weekly security analysis for C# and JavaScript code
+
+- **Dependabot**: Automated dependency updates for npm, NuGet, and GitHub Actions
+
+### Coverage Reports
+
+Coverage reports are automatically generated and available:
+- **HTML Reports**: Download from workflow artifacts for detailed line-by-line coverage
+- **PR Comments**: Coverage percentage automatically commented on pull requests
+- **Threshold Enforcement**: CI fails if coverage drops below 80%
+
+No external services or secrets required - everything runs natively in GitHub Actions!
+
+### Branch Protection
+
+Recommended branch protection rules for `main` branch:
+- Require pull request reviews before merging
+- Require status checks to pass: `backend-test`, `frontend-test`, `docker-build`
+- Require branches to be up to date before merging
+- Include administrators in restrictions (optional)
 
 ## License
 

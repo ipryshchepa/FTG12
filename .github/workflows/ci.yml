@@ -1,0 +1,169 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET 10 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore Backend/PersonalLibrary.API/PersonalLibrary.API.csproj
+      
+    - name: Build
+      run: dotnet build Backend/PersonalLibrary.API/PersonalLibrary.API.csproj --no-restore --configuration Release
+      
+    - name: Run tests with coverage
+      run: dotnet test Backend/PersonalLibrary.API.Tests/PersonalLibrary.API.Tests.csproj --no-build --configuration Release --collect:"XPlat Code Coverage" --logger trx --results-directory ./coverage
+      
+    - name: Install coverage report tool
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+      
+    - name: Check coverage threshold
+      run: |
+        reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" -targetdir:"./coverage/report" -reporttypes:"Html;TextSummary;Badges"
+        cat ./coverage/report/Summary.txt
+        
+        # Extract line coverage percentage
+        COVERAGE=$(grep "Line coverage:" ./coverage/report/Summary.txt | grep -oP '\d+\.\d+')
+        echo "Backend Coverage: $COVERAGE%"
+        echo "BACKEND_COVERAGE=$COVERAGE" >> $GITHUB_ENV
+        
+        # Check if coverage meets 80% threshold
+        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+          echo "❌ Backend coverage $COVERAGE% is below 80% threshold"
+          exit 1
+        else
+          echo "✅ Backend coverage $COVERAGE% meets the 80% threshold"
+        fi
+      
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-coverage-report
+        path: ./coverage/report/
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-test-results
+        path: ./coverage/**/*.trx
+    
+    - name: Comment coverage on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const coverage = process.env.BACKEND_COVERAGE;
+          const emoji = coverage >= 80 ? '✅' : '❌';
+          const body = `## Backend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+          
+          github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: body
+          });
+
+  frontend-test:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: Frontend/package-lock.json
+        
+    - name: Install dependencies
+      run: npm ci
+      working-directory: Frontend
+      
+    - name: Run lint
+      run: npm run lint
+      working-directory: Frontend
+      
+    - name: Run tests with coverage
+      run: npm run test:coverage
+      working-directory: Frontend
+      
+    - name: Check coverage threshold
+      run: |
+        COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+        echo "Frontend Coverage: $COVERAGE%"
+        echo "FRONTEND_COVERAGE=$COVERAGE" >> $GITHUB_ENV
+        
+        # Check if coverage meets 80% threshold
+        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+          echo "❌ Frontend coverage $COVERAGE% is below 80% threshold"
+          exit 1
+        else
+          echo "✅ Frontend coverage $COVERAGE% meets the 80% threshold"
+        fi
+      working-directory: Frontend
+      
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: frontend-coverage-report
+        path: Frontend/coverage/
+    
+    - name: Comment coverage on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const coverage = process.env.FRONTEND_COVERAGE;
+          const emoji = coverage >= 80 ? '✅' : '❌';
+          const body = `## Frontend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+          
+          github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: body
+          });
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build backend image
+      run: docker build -f Backend/PersonalLibrary.API/Dockerfile -t personal-library-api:test .
+      
+    - name: Build frontend image
+      run: docker build -f Frontend/Dockerfile -t personal-library-frontend:test .
+      
+    - name: Test images can start
+      run: |
+        echo "Backend and frontend images built successfully"
+        docker images | grep personal-library

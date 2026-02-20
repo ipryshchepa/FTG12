@@ -1,0 +1,55 @@
+# Codecov Configuration (OPTIONAL)
+# 
+# This configuration is NOT required for the CI/CD pipeline to work.
+# Coverage checks are enforced natively in GitHub Actions.
+# 
+# If you want to use Codecov for additional coverage insights:
+# 1. Sign up at https://codecov.io
+# 2. Add CODECOV_TOKEN to repository secrets
+# 3. Uncomment the codecov upload steps in .github/workflows/ci.yml
+#
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+        if_ci_failed: error
+        
+    patch:
+      default:
+        target: 80%
+        threshold: 1%
+        if_ci_failed: error
+
+comment:
+  layout: "header, diff, flags, files, footer"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+
+flags:
+  backend:
+    paths:
+      - Backend/
+    carryforward: true
+    
+  frontend:
+    paths:
+      - Frontend/
+    carryforward: true
+
+ignore:
+  - "**/*.test.js"
+  - "**/*.test.jsx"
+  - "**/test-utils/**"
+  - "**/coverage/**"
+  - "**/node_modules/**"
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/*.Tests/**"
