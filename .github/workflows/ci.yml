@@ -81,9 +81,28 @@ jobs:
         script: |
           const coverage = process.env.BACKEND_COVERAGE;
           const emoji = coverage >= 80 ? '✅' : '❌';
-          const body = `## Backend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+          const marker = '<!-- CI-Coverage-Report: Backend -->';
+          const body = `${marker}\n## Backend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
           
-          github.rest.issues.createComment({
+          // Delete old backend coverage comments
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number
+          });
+          
+          for (const comment of comments.data) {
+            if (comment.body.includes(marker) && comment.user.type === 'Bot') {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+            }
+          }
+          
+          // Post new comment
+          await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: context.issue.number,
@@ -152,9 +171,28 @@ jobs:
         script: |
           const coverage = process.env.FRONTEND_COVERAGE;
           const emoji = coverage >= 80 ? '✅' : '❌';
-          const body = `## Frontend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+          const marker = '<!-- CI-Coverage-Report: Frontend -->';
+          const body = `${marker}\n## Frontend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
           
-          github.rest.issues.createComment({
+          // Delete old frontend coverage comments
+          const comments = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number
+          });
+          
+          for (const comment of comments.data) {
+            if (comment.body.includes(marker) && comment.user.type === 'Bot') {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+            }
+          }
+          
+          // Post new comment
+          await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: context.issue.number,
