@@ -822,6 +822,42 @@ describe('BookDetails Page', () => {
         expect(screen.getByText('Not currently loaned')).toBeInTheDocument();
       });
     });
+
+    it('should display "View History" button', async () => {
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /View History/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should navigate to loan history when View History button is clicked', async () => {
+      const user = userEvent.setup();
+      const mockBook = createMockBook();
+      vi.spyOn(bookService, 'getBookDetails').mockResolvedValue(mockBook);
+
+      render(
+        <BrowserRouter>
+          <BookDetails />
+        </BrowserRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /View History/i })).toBeInTheDocument();
+      });
+
+      const viewHistoryButton = screen.getByRole('button', { name: /View History/i });
+      await user.click(viewHistoryButton);
+
+      expect(mockNavigate).toHaveBeenCalledWith(`/books/${mockBook.id}/history`);
+    });
   });
 
   describe('Navigation', () => {

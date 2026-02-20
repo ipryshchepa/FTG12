@@ -503,6 +503,16 @@ function BookDetails() {
               ) : (
                 <p className="grey-text" style={{ marginBottom: '0' }}>Not currently loaned</p>
               )}
+              <div style={{ marginTop: '1rem' }}>
+                <button
+                  className="btn-small waves-effect waves-light grey"
+                  onClick={() => navigate(`/books/${book.id}/history`)}
+                  title="View loan history"
+                >
+                  <i className="material-icons left">history</i>
+                  View History
+                </button>
+              </div>
             </div>
           </div>
         </div>
