@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import * as loanService from '../services/loanService';
 import * as bookService from '../services/bookService';
@@ -17,7 +17,7 @@ function LoanedBooks() {
   const location = useLocation();
   const { showToast } = useToast();
 
-  const fetchLoanedBooks = async () => {
+  const fetchLoanedBooks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -59,11 +59,11 @@ function LoanedBooks() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchLoanedBooks();
-  }, []);
+  }, [fetchLoanedBooks]);
 
   const handleTitleClick = (bookId) => {
     navigate(`/books/${bookId}`, { state: { from: location.pathname } });

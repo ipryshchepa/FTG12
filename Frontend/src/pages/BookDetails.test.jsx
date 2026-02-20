@@ -1650,7 +1650,7 @@ describe('BookDetails Page', () => {
       const mockBook = createMockBook({ score: 7 });
       const updatedBook = createMockBook({ score: 9, ratingNotes: 'Excellent!' });
       
-      const getDetailsSpy = vi.spyOn(bookService, 'getBookDetails')
+      vi.spyOn(bookService, 'getBookDetails')
         .mockResolvedValueOnce(mockBook)
         .mockResolvedValueOnce(updatedBook);
 

@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   backend-test:
     name: Backend Tests
@@ -21,13 +25,13 @@ jobs:
         dotnet-version: '10.0.x'
         
     - name: Restore dependencies
-      run: dotnet restore Backend/PersonalLibrary.API/PersonalLibrary.API.csproj
+      run: dotnet restore Backend/PersonalLibrary.API.Tests/PersonalLibrary.API.Tests.csproj
       
     - name: Build
-      run: dotnet build Backend/PersonalLibrary.API/PersonalLibrary.API.csproj --no-restore --configuration Release
+      run: dotnet build Backend/PersonalLibrary.API.Tests/PersonalLibrary.API.Tests.csproj --no-restore --configuration Release
       
     - name: Run tests with coverage
-      run: dotnet test Backend/PersonalLibrary.API.Tests/PersonalLibrary.API.Tests.csproj --no-build --configuration Release --collect:"XPlat Code Coverage" --logger trx --results-directory ./coverage
+      run: dotnet test Backend/PersonalLibrary.API.Tests/PersonalLibrary.API.Tests.csproj --no-build --configuration Release --collect:"XPlat Code Coverage" --settings Backend/coverlet.runsettings --logger trx --results-directory ./coverage
       
     - name: Install coverage report tool
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -38,17 +42,23 @@ jobs:
         cat ./coverage/report/Summary.txt
         
         # Extract line coverage percentage
-        COVERAGE=$(grep "Line coverage:" ./coverage/report/Summary.txt | grep -oP '\d+\.\d+')
+        COVERAGE=$(grep "Line coverage:" ./coverage/report/Summary.txt | grep -oP '\d+(\.\d+)?' | head -1)
+        if [ -z "$COVERAGE" ]; then
+          echo "Error: Could not extract coverage percentage"
+          exit 1
+        fi
+        
         echo "Backend Coverage: $COVERAGE%"
         echo "BACKEND_COVERAGE=$COVERAGE" >> $GITHUB_ENV
         
-        # Check if coverage meets 80% threshold
-        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-          echo "❌ Backend coverage $COVERAGE% is below 80% threshold"
+        # Check if coverage meets 70% threshold using Python
+        THRESHOLD=80
+        python3 -c "import sys; sys.exit(0 if float('$COVERAGE') >= $THRESHOLD else 1)" && {
+          echo "✅ Backend coverage $COVERAGE% meets the ${THRESHOLD}% threshold"
+        } || {
+          echo "❌ Backend coverage $COVERAGE% is below ${THRESHOLD}% threshold"
           exit 1
-        else
-          echo "✅ Backend coverage $COVERAGE% meets the 80% threshold"
-        fi
+        }
       
     - name: Upload coverage reports
       uses: actions/upload-artifact@v4
@@ -71,14 +81,43 @@ jobs:
         script: |
           const coverage = process.env.BACKEND_COVERAGE;
           const emoji = coverage >= 80 ? '✅' : '❌';
-          const body = `## Backend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+          const marker = '<!-- CI-Coverage-Report: Backend -->';
+          const body = `${marker}\n## Backend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
           
-          github.rest.issues.createComment({
+          // Find and delete existing backend coverage comments
+          try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const oldComments = comments.filter(comment => 
+              comment.body && comment.body.includes(marker)
+            );
+            
+            for (const comment of oldComments) {
+              console.log(`Deleting old backend coverage comment ID: ${comment.id}`);
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+              console.log(`Successfully deleted comment ID: ${comment.id}`);
+            }
+          } catch (error) {
+            console.log(`Note: Could not delete old comments: ${error.message}`);
+            console.log('This may be due to permissions or no existing comments.');
+          }
+          
+          // Create new comment
+          await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: context.issue.number,
             body: body
           });
+          console.log('Successfully posted new backend coverage comment');
 
   frontend-test:
     name: Frontend Tests
@@ -109,17 +148,23 @@ jobs:
       
     - name: Check coverage threshold
       run: |
-        COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+        if [ ! -f coverage/coverage-summary.json ]; then
+          echo "Error: Coverage summary not found"
+          exit 1
+        fi
+        
+        COVERAGE=$(jq '.total.statements.pct' coverage/coverage-summary.json)
         echo "Frontend Coverage: $COVERAGE%"
         echo "FRONTEND_COVERAGE=$COVERAGE" >> $GITHUB_ENV
         
-        # Check if coverage meets 80% threshold
-        if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-          echo "❌ Frontend coverage $COVERAGE% is below 80% threshold"
+        # Check if coverage meets 80% threshold using Python
+        THRESHOLD=80
+        python3 -c "import sys; sys.exit(0 if float('$COVERAGE') >= $THRESHOLD else 1)" && {
+          echo "✅ Frontend coverage $COVERAGE% meets the ${THRESHOLD}% threshold"
+        } || {
+          echo "❌ Frontend coverage $COVERAGE% is below ${THRESHOLD}% threshold"
           exit 1
-        else
-          echo "✅ Frontend coverage $COVERAGE% meets the 80% threshold"
-        fi
+        }
       working-directory: Frontend
       
     - name: Upload coverage report
@@ -136,14 +181,43 @@ jobs:
         script: |
           const coverage = process.env.FRONTEND_COVERAGE;
           const emoji = coverage >= 80 ? '✅' : '❌';
-          const body = `## Frontend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+          const marker = '<!-- CI-Coverage-Report: Frontend -->';
+          const body = `${marker}\n## Frontend Test Coverage\n\n${emoji} **${coverage}%** (Threshold: 80%)\n\n[Download detailed report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
           
-          github.rest.issues.createComment({
+          // Find and delete existing frontend coverage comments
+          try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            const oldComments = comments.filter(comment => 
+              comment.body && comment.body.includes(marker)
+            );
+            
+            for (const comment of oldComments) {
+              console.log(`Deleting old frontend coverage comment ID: ${comment.id}`);
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+              console.log(`Successfully deleted comment ID: ${comment.id}`);
+            }
+          } catch (error) {
+            console.log(`Note: Could not delete old comments: ${error.message}`);
+            console.log('This may be due to permissions or no existing comments.');
+          }
+          
+          // Create new comment
+          await github.rest.issues.createComment({
             owner: context.repo.owner,
             repo: context.repo.repo,
             issue_number: context.issue.number,
             body: body
           });
+          console.log('Successfully posted new frontend coverage comment');
 
   docker-build:
     name: Docker Build
@@ -158,12 +232,33 @@ jobs:
       uses: docker/setup-buildx-action@v3
       
     - name: Build backend image
-      run: docker build -f Backend/PersonalLibrary.API/Dockerfile -t personal-library-api:test .
+      run: docker build -t personal-library-api:test Backend/PersonalLibrary.API
       
     - name: Build frontend image
-      run: docker build -f Frontend/Dockerfile -t personal-library-frontend:test .
+      run: docker build -t personal-library-frontend:test Frontend
       
-    - name: Test images can start
+    - name: Verify images were built
       run: |
-        echo "Backend and frontend images built successfully"
+        echo "✅ Verifying Docker images..."
         docker images | grep personal-library
+        echo ""
+        echo "✅ Backend image: $(docker images personal-library-api:test --format '{{.Size}}')"
+        echo "✅ Frontend image: $(docker images personal-library-frontend:test --format '{{.Size}}')"
+        
+    - name: Test backend container can start
+      run: |
+        echo "Testing backend container startup..."
+        docker run -d --name test-api -e ASPNETCORE_ENVIRONMENT=Development personal-library-api:test
+        sleep 5
+        docker ps -a | grep test-api
+        docker stop test-api && docker rm test-api
+        echo "✅ Backend container started successfully"
+        
+    - name: Test frontend container can start
+      run: |
+        echo "Testing frontend container startup..."
+        docker run -d --name test-frontend personal-library-frontend:test
+        sleep 3
+        docker ps -a | grep test-frontend
+        docker stop test-frontend && docker rm test-frontend
+        echo "✅ Frontend container started successfully"

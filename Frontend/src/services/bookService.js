@@ -43,7 +43,7 @@ export async function getBookDetails(id) {
  */
 export async function createBook(bookData) {
   // Ensure Id is null or omitted for create operations
-  const { id, ...dataWithoutId } = bookData;
+  const { id: _id, ...dataWithoutId } = bookData;
   return api.post('/api/books', dataWithoutId);
 }
 
