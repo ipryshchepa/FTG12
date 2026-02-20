@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useBooks } from '../hooks/useBooks';
 import { useModal } from '../hooks/useModal';
 import { useToast } from '../hooks/useToast';
@@ -18,6 +18,7 @@ import './Dashboard.css';
  */
 function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { books, loading, error, totalCount, fetchBooks } = useBooks();
   const addBookModal = useModal();
   const rateModal = useModal();
@@ -56,7 +57,7 @@ function Dashboard() {
   };
 
   const handleTitleClick = (bookId) => {
-    navigate(`/books/${bookId}`);
+    navigate(`/books/${bookId}`, { state: { from: location.pathname } });
   };
 
   const handleRetry = () => {

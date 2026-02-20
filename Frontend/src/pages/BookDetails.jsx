@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import * as bookService from '../services/bookService';
 import * as loanService from '../services/loanService';
 import { formatOwnershipStatus, formatReadingStatus, formatStarRating, formatDate } from '../utils/formatters';
@@ -22,6 +22,7 @@ import { MAX_LENGTHS, OWNERSHIP_STATUS_OPTIONS } from '../constants';
 function BookDetails() {
   const { bookId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
   const rateModal = useModal();
   const loanModal = useModal();
@@ -69,7 +70,15 @@ function BookDetails() {
   }, [bookId]);
 
   const handleBack = () => {
-    navigate('/');
+    // Navigate back to the page we came from, or dashboard by default
+    const from = location.state?.from;
+    if (from) {
+      navigate(from);
+    } else if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
   };
 
   const handleEdit = () => {

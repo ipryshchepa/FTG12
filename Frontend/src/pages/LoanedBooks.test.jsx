@@ -11,7 +11,8 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
-    useNavigate: () => mockNavigate
+    useNavigate: () => mockNavigate,
+    useLocation: () => ({ pathname: '/loaned' })
   };
 });
 
@@ -232,7 +233,7 @@ describe('LoanedBooks Page', () => {
     const titleButton = screen.getByText('The Great Adventure');
     fireEvent.click(titleButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('/books/101');
+    expect(mockNavigate).toHaveBeenCalledWith('/books/101', { state: { from: '/loaned' } });
   });
 
   it('should display empty state when no loans exist', async () => {

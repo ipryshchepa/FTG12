@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import * as loanService from '../services/loanService';
 import * as bookService from '../services/bookService';
 import LoanedBookGrid from '../components/loans/LoanedBookGrid';
@@ -14,6 +14,7 @@ function LoanedBooks() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
 
   const fetchLoanedBooks = async () => {
@@ -65,7 +66,7 @@ function LoanedBooks() {
   }, []);
 
   const handleTitleClick = (bookId) => {
-    navigate(`/books/${bookId}`);
+    navigate(`/books/${bookId}`, { state: { from: location.pathname } });
   };
 
   const handleReturn = async (loan) => {

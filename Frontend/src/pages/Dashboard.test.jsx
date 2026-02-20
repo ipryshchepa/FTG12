@@ -259,7 +259,7 @@ describe('Dashboard Page', () => {
     const titleButton = screen.getByText('Test Book');
     titleButton.click();
 
-    expect(mockNavigate).toHaveBeenCalledWith('/books/book-123');
+    expect(mockNavigate).toHaveBeenCalledWith('/books/book-123', { state: { from: '/' } });
   });
 
   it('should refetch books when page changes', async () => {
