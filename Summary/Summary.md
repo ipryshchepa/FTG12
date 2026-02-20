@@ -16,7 +16,7 @@ This document chronicles the development process of the Personal Library applica
 - **Persistent problem-solving** - Through multiple iterations, eventually resolved complex issues like CI/CD pipeline configuration
 
 ### ❌ Challenges & Issues
-
+- **Lack of practice** - I definitely need more practice internalizing the prompt engineering techinques and instruments available. I often wasted token or requests by iterating using ineffective prompts
 - **Specificity required** - Generic prompts led to unexpected decisions (e.g., 'Frontend'/'Backend' folder naming)
 - **Misinterpretations** - Confused property requirements with enum values; required detailed clarification
 - **Excessive verbosity** - Generated overly long instruction files (580 lines) and documentation (200+ lines) requiring manual trimming
