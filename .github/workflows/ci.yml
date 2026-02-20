@@ -92,7 +92,8 @@ jobs:
           });
           
           for (const comment of comments.data) {
-            if (comment.body.includes(marker) && comment.user.type === 'Bot') {
+            if (comment.body && comment.body.includes(marker) && 
+                (comment.user.login === 'github-actions[bot]' || comment.user.type === 'Bot')) {
               await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -182,7 +183,8 @@ jobs:
           });
           
           for (const comment of comments.data) {
-            if (comment.body.includes(marker) && comment.user.type === 'Bot') {
+            if (comment.body && comment.body.includes(marker) && 
+                (comment.user.login === 'github-actions[bot]' || comment.user.type === 'Bot')) {
               await github.rest.issues.deleteComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
