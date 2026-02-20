@@ -174,12 +174,33 @@ jobs:
       uses: docker/setup-buildx-action@v3
       
     - name: Build backend image
-      run: docker build -f Backend/PersonalLibrary.API/Dockerfile -t personal-library-api:test .
+      run: docker build -t personal-library-api:test Backend/PersonalLibrary.API
       
     - name: Build frontend image
-      run: docker build -f Frontend/Dockerfile -t personal-library-frontend:test .
+      run: docker build -t personal-library-frontend:test Frontend
       
-    - name: Test images can start
+    - name: Verify images were built
       run: |
-        echo "Backend and frontend images built successfully"
+        echo "✅ Verifying Docker images..."
         docker images | grep personal-library
+        echo ""
+        echo "✅ Backend image: $(docker images personal-library-api:test --format '{{.Size}}')"
+        echo "✅ Frontend image: $(docker images personal-library-frontend:test --format '{{.Size}}')"
+        
+    - name: Test backend container can start
+      run: |
+        echo "Testing backend container startup..."
+        docker run -d --name test-api -e ASPNETCORE_ENVIRONMENT=Development personal-library-api:test
+        sleep 5
+        docker ps -a | grep test-api
+        docker stop test-api && docker rm test-api
+        echo "✅ Backend container started successfully"
+        
+    - name: Test frontend container can start
+      run: |
+        echo "Testing frontend container startup..."
+        docker run -d --name test-frontend personal-library-frontend:test
+        sleep 3
+        docker ps -a | grep test-frontend
+        docker stop test-frontend && docker rm test-frontend
+        echo "✅ Frontend container started successfully"
